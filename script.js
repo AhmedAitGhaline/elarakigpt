@@ -1,3 +1,661 @@
+// =============================================
+// SYSTÈME DE SÉCURITÉ AVANCÉ
+// =============================================
+
+class SecurityManager {
+    constructor() {
+        // Clés de chiffrement sécurisées (à changer en production)
+        this.ENCRYPTION_KEY = this.generateEncryptionKey();
+        this.IV_KEY = this.generateIVKey();
+        this.SESSION_KEY = 'elaraki_secure_session';
+        this.USER_DATA_KEY = 'elaraki_encrypted_data';
+        this.MAX_LOGIN_ATTEMPTS = 5;
+        this.LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes
+    }
+    
+    generateEncryptionKey() {
+        // Génère une clé de chiffrement plus sécurisée
+        const key = crypto.getRandomValues(new Uint8Array(32));
+        return Array.from(key).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    
+    generateIVKey() {
+        // Génère un IV (Initialization Vector)
+        const iv = crypto.getRandomValues(new Uint8Array(16));
+        return Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    
+    async encryptData(data) {
+        try {
+            const text = JSON.stringify(data);
+            const encoder = new TextEncoder();
+            const dataBuffer = encoder.encode(text);
+            
+            // Convertir la clé en ArrayBuffer
+            const keyBuffer = new Uint8Array(this.ENCRYPTION_KEY.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+            const ivBuffer = new Uint8Array(this.IV_KEY.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+            
+            // Chiffrement AES-GCM
+            const cryptoKey = await crypto.subtle.importKey(
+                'raw',
+                keyBuffer,
+                { name: 'AES-GCM' },
+                false,
+                ['encrypt']
+            );
+            
+            const encryptedBuffer = await crypto.subtle.encrypt(
+                {
+                    name: 'AES-GCM',
+                    iv: ivBuffer
+                },
+                cryptoKey,
+                dataBuffer
+            );
+            
+            // Convertir en base64 pour stockage
+            const encryptedArray = new Uint8Array(encryptedBuffer);
+            return btoa(String.fromCharCode.apply(null, encryptedArray));
+        } catch (error) {
+            console.error('Erreur de chiffrement:', error);
+            return null;
+        }
+    }
+    
+    async decryptData(encryptedData) {
+        try {
+            if (!encryptedData) return null;
+            
+            // Convertir depuis base64
+            const binaryString = atob(encryptedData);
+            const encryptedBuffer = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                encryptedBuffer[i] = binaryString.charCodeAt(i);
+            }
+            
+            // Convertir les clés
+            const keyBuffer = new Uint8Array(this.ENCRYPTION_KEY.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+            const ivBuffer = new Uint8Array(this.IV_KEY.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+            
+            const cryptoKey = await crypto.subtle.importKey(
+                'raw',
+                keyBuffer,
+                { name: 'AES-GCM' },
+                false,
+                ['decrypt']
+            );
+            
+            const decryptedBuffer = await crypto.subtle.decrypt(
+                {
+                    name: 'AES-GCM',
+                    iv: ivBuffer
+                },
+                cryptoKey,
+                encryptedBuffer
+            );
+            
+            const decoder = new TextDecoder();
+            const decryptedText = decoder.decode(decryptedBuffer);
+            return JSON.parse(decryptedText);
+        } catch (error) {
+            console.error('Erreur de déchiffrement:', error);
+            this.showSecurityAlert('Données corrompues ou attaque détectée');
+            return null;
+        }
+    }
+    
+    hashPassword(password, salt = null) {
+        // Hachage sécurisé avec salage
+        const saltToUse = salt || this.generateSalt();
+        const encoder = new TextEncoder();
+        const data = encoder.encode(password + saltToUse);
+        
+        // Utilisation de SHA-256
+        return crypto.subtle.digest('SHA-256', data)
+            .then(hash => {
+                const hashArray = Array.from(new Uint8Array(hash));
+                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                return {
+                    hash: hashHex,
+                    salt: saltToUse
+                };
+            });
+    }
+    
+    generateSalt() {
+        // Génère un sel aléatoire de 32 caractères
+        const array = new Uint8Array(16);
+        crypto.getRandomValues(array);
+        return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    
+    validatePassword(password) {
+        // Validation stricte du mot de passe
+        const minLength = 8;
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasLowerCase = /[a-z]/.test(password);
+        const hasNumbers = /\d/.test(password);
+        const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+        
+        if (password.length < minLength) {
+            return { valid: false, message: `Le mot de passe doit contenir au moins ${minLength} caractères` };
+        }
+        if (!hasUpperCase) {
+            return { valid: false, message: 'Le mot de passe doit contenir au moins une majuscule' };
+        }
+        if (!hasLowerCase) {
+            return { valid: false, message: 'Le mot de passe doit contenir au moins une minuscule' };
+        }
+        if (!hasNumbers) {
+            return { valid: false, message: 'Le mot de passe doit contenir au moins un chiffre' };
+        }
+        if (!hasSpecialChar) {
+            return { valid: false, message: 'Le mot de passe doit contenir au moins un caractère spécial' };
+        }
+        
+        return { valid: true, message: 'Mot de passe valide' };
+    }
+    
+    checkPasswordStrength(password) {
+        let score = 0;
+        if (password.length >= 8) score++;
+        if (password.length >= 12) score++;
+        if (/[A-Z]/.test(password)) score++;
+        if (/[a-z]/.test(password)) score++;
+        if (/\d/.test(password)) score++;
+        if (/[^A-Za-z0-9]/.test(password)) score++;
+        
+        return Math.min(score, 5);
+    }
+    
+    sanitizeInput(input) {
+        // Nettoyage des inputs pour prévenir XSS
+        if (typeof input !== 'string') return input;
+        
+        return input
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#x27;')
+            .replace(/\//g, '&#x2F;')
+            .replace(/\\/g, '&#x5C;')
+            .replace(/`/g, '&#96;');
+    }
+    
+    validateEmail(email) {
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        return emailRegex.test(email);
+    }
+    
+    createSessionToken(userId, email) {
+        // Crée un token de session sécurisé
+        const sessionData = {
+            userId: userId,
+            email: email,
+            created: Date.now(),
+            expires: Date.now() + (24 * 60 * 60 * 1000), // 24 heures
+            token: this.generateToken()
+        };
+        
+        return sessionData;
+    }
+    
+    generateToken() {
+        // Génère un token JWT-like sécurisé
+        const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+        const payload = btoa(JSON.stringify({
+            iss: 'elaraki-gpt',
+            iat: Date.now(),
+            exp: Date.now() + (24 * 60 * 60 * 1000)
+        }));
+        
+        // Signature simulée (en production, utiliser une vraie signature)
+        const signature = crypto.getRandomValues(new Uint8Array(32));
+        const signatureB64 = btoa(String.fromCharCode.apply(null, signature));
+        
+        return `${header}.${payload}.${signatureB64}`;
+    }
+    
+    validateSessionToken(token) {
+        if (!token) return false;
+        
+        try {
+            const parts = token.split('.');
+            if (parts.length !== 3) return false;
+            
+            const payload = JSON.parse(atob(parts[1]));
+            
+            // Vérifier l'expiration
+            if (payload.exp < Date.now()) {
+                return false;
+            }
+            
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
+    
+    trackLoginAttempt(email, success) {
+        const attemptsKey = `login_attempts_${email}`;
+        const lockoutKey = `lockout_${email}`;
+        
+        if (success) {
+            localStorage.removeItem(attemptsKey);
+            localStorage.removeItem(lockoutKey);
+            return true;
+        }
+        
+        let attempts = parseInt(localStorage.getItem(attemptsKey) || '0');
+        attempts++;
+        localStorage.setItem(attemptsKey, attempts.toString());
+        
+        if (attempts >= this.MAX_LOGIN_ATTEMPTS) {
+            const lockoutUntil = Date.now() + this.LOCKOUT_TIME;
+            localStorage.setItem(lockoutKey, lockoutUntil.toString());
+            this.showSecurityAlert('Trop de tentatives échouées. Compte verrouillé pendant 15 minutes.');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    checkLockout(email) {
+        const lockoutKey = `lockout_${email}`;
+        const lockoutUntil = localStorage.getItem(lockoutKey);
+        
+        if (lockoutUntil && Date.now() < parseInt(lockoutUntil)) {
+            const remaining = Math.ceil((parseInt(lockoutUntil) - Date.now()) / 60000);
+            this.showSecurityAlert(`Compte verrouillé. Réessayez dans ${remaining} minutes.`);
+            return false;
+        }
+        
+        return true;
+    }
+    
+    showSecurityAlert(message) {
+        const alertModal = document.getElementById('security-alert-modal');
+        const alertTitle = document.getElementById('security-alert-title');
+        const alertMessage = document.getElementById('security-alert-message');
+        
+        if (alertModal && alertTitle && alertMessage) {
+            alertTitle.textContent = 'Alerte de Sécurité';
+            alertMessage.textContent = message;
+            
+            alertModal.classList.add('show');
+            document.body.classList.add('modal-open');
+            document.body.style.overflow = 'hidden';
+            
+            // Fermer automatiquement après 5 secondes
+            setTimeout(() => {
+                this.hideModal(alertModal);
+            }, 5000);
+        } else {
+            console.warn('Alerte de sécurité:', message);
+        }
+    }
+    
+    hideModal(modal) {
+        modal.classList.remove('show');
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = 'auto';
+    }
+    
+    async exportData(data) {
+        // Export sécurisé des données
+        const encryptedData = await this.encryptData(data);
+        if (!encryptedData) {
+            this.showSecurityAlert('Erreur lors du chiffrement des données');
+            return null;
+        }
+        
+        const exportData = {
+            version: '1.0',
+            timestamp: new Date().toISOString(),
+            data: encryptedData,
+            checksum: await this.generateChecksum(data)
+        };
+        
+        return exportData;
+    }
+    
+    async generateChecksum(data) {
+        const text = JSON.stringify(data);
+        const encoder = new TextEncoder();
+        const dataBuffer = encoder.encode(text);
+        
+        const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    
+    verifyChecksum(data, checksum) {
+        return this.generateChecksum(data).then(newChecksum => newChecksum === checksum);
+    }
+}
+
+// =============================================
+// GESTIONNAIRE D'UTILISATEURS SÉCURISÉ
+// =============================================
+
+class SecureUserManager {
+    constructor() {
+        this.security = new SecurityManager();
+        this.currentUser = null;
+        this.users = new Map();
+        this.userConversations = new Map();
+        this.loadUsers();
+    }
+    
+    async loadUsers() {
+        try {
+            // Charger les données chiffrées
+            const encryptedData = localStorage.getItem(this.security.USER_DATA_KEY);
+            const sessionData = localStorage.getItem(this.security.SESSION_KEY);
+            
+            if (encryptedData) {
+                const decryptedData = await this.security.decryptData(encryptedData);
+                if (decryptedData && decryptedData.users) {
+                    decryptedData.users.forEach(user => {
+                        this.users.set(user.email, user);
+                    });
+                    
+                    if (decryptedData.conversations) {
+                        Object.entries(decryptedData.conversations).forEach(([userId, convData]) => {
+                            this.userConversations.set(userId, new Map(Object.entries(convData)));
+                        });
+                    }
+                }
+            }
+            
+            // Vérifier la session
+            if (sessionData) {
+                const session = JSON.parse(sessionData);
+                if (this.security.validateSessionToken(session.token)) {
+                    this.currentUser = session;
+                } else {
+                    localStorage.removeItem(this.security.SESSION_KEY);
+                }
+            }
+        } catch (error) {
+            console.error('Erreur chargement utilisateurs:', error);
+            this.security.showSecurityAlert('Erreur de chargement des données');
+        }
+    }
+    
+    async saveUsers() {
+        try {
+            const dataToSave = {
+                users: Array.from(this.users.values()),
+                conversations: {}
+            };
+            
+            this.userConversations.forEach((conversations, userId) => {
+                dataToSave.conversations[userId] = Object.fromEntries(conversations);
+            });
+            
+            const encryptedData = await this.security.encryptData(dataToSave);
+            if (encryptedData) {
+                localStorage.setItem(this.security.USER_DATA_KEY, encryptedData);
+            }
+            
+            if (this.currentUser) {
+                localStorage.setItem(this.security.SESSION_KEY, JSON.stringify(this.currentUser));
+            }
+        } catch (error) {
+            console.error('Erreur sauvegarde utilisateurs:', error);
+            this.security.showSecurityAlert('Erreur de sauvegarde des données');
+        }
+    }
+    
+    async register(name, email, password) {
+        // Validation des inputs
+        name = this.security.sanitizeInput(name.trim());
+        email = email.toLowerCase().trim();
+        
+        if (!name || !email || !password) {
+            return { success: false, message: 'Tous les champs sont obligatoires' };
+        }
+        
+        if (!this.security.validateEmail(email)) {
+            return { success: false, message: 'Email invalide' };
+        }
+        
+        const passwordValidation = this.security.validatePassword(password);
+        if (!passwordValidation.valid) {
+            return { success: false, message: passwordValidation.message };
+        }
+        
+        if (this.users.has(email)) {
+            return { success: false, message: 'Cet email est déjà utilisé' };
+        }
+        
+        try {
+            // Hachage sécurisé du mot de passe
+            const hashedPassword = await this.security.hashPassword(password);
+            
+            // Créer l'utilisateur
+            const userId = 'user_' + Date.now() + '_' + crypto.getRandomValues(new Uint8Array(4)).join('');
+            const user = {
+                id: userId,
+                name: name,
+                email: email,
+                passwordHash: hashedPassword.hash,
+                salt: hashedPassword.salt,
+                createdAt: new Date().toISOString(),
+                lastLogin: new Date().toISOString(),
+                totalMessages: 0,
+                securityLevel: 'high'
+            };
+            
+            this.users.set(email, user);
+            
+            // Créer une session
+            const session = this.security.createSessionToken(userId, email);
+            this.currentUser = session;
+            
+            await this.saveUsers();
+            
+            return { success: true, user: user };
+        } catch (error) {
+            console.error('Erreur inscription:', error);
+            return { success: false, message: 'Erreur lors de la création du compte' };
+        }
+    }
+    
+    async login(email, password) {
+        email = email.toLowerCase().trim();
+        
+        if (!email || !password) {
+            return { success: false, message: 'Email et mot de passe requis' };
+        }
+        
+        // Vérifier le verrouillage
+        if (!this.security.checkLockout(email)) {
+            return { success: false, message: 'Compte temporairement verrouillé' };
+        }
+        
+        const user = this.users.get(email);
+        
+        if (!user) {
+            this.security.trackLoginAttempt(email, false);
+            return { success: false, message: 'Identifiants incorrects' };
+        }
+        
+        try {
+            // Vérifier le mot de passe
+            const hashedInput = await this.security.hashPassword(password, user.salt);
+            
+            if (hashedInput.hash !== user.passwordHash) {
+                this.security.trackLoginAttempt(email, false);
+                return { success: false, message: 'Identifiants incorrects' };
+            }
+            
+            // Succès - mettre à jour la session
+            this.security.trackLoginAttempt(email, true);
+            
+            user.lastLogin = new Date().toISOString();
+            const session = this.security.createSessionToken(user.id, user.email);
+            this.currentUser = session;
+            
+            await this.saveUsers();
+            
+            return { success: true, user: user };
+        } catch (error) {
+            console.error('Erreur connexion:', error);
+            return { success: false, message: 'Erreur d\'authentification' };
+        }
+    }
+    
+    logout() {
+        this.currentUser = null;
+        localStorage.removeItem(this.security.SESSION_KEY);
+        return { success: true };
+    }
+    
+    async changePassword(currentPassword, newPassword) {
+        if (!this.currentUser) {
+            return { success: false, message: 'Non connecté' };
+        }
+        
+        const user = this.users.get(this.currentUser.email);
+        if (!user) {
+            return { success: false, message: 'Utilisateur non trouvé' };
+        }
+        
+        // Vérifier l'ancien mot de passe
+        const hashedCurrent = await this.security.hashPassword(currentPassword, user.salt);
+        if (hashedCurrent.hash !== user.passwordHash) {
+            return { success: false, message: 'Mot de passe actuel incorrect' };
+        }
+        
+        // Valider le nouveau mot de passe
+        const passwordValidation = this.security.validatePassword(newPassword);
+        if (!passwordValidation.valid) {
+            return { success: false, message: passwordValidation.message };
+        }
+        
+        // Mettre à jour le mot de passe
+        const hashedNew = await this.security.hashPassword(newPassword);
+        user.passwordHash = hashedNew.hash;
+        user.salt = hashedNew.salt;
+        
+        await this.saveUsers();
+        
+        return { success: true, message: 'Mot de passe mis à jour' };
+    }
+    
+    getUserConversations() {
+        if (!this.currentUser) return new Map();
+        
+        const userId = this.currentUser.userId;
+        return this.userConversations.get(userId) || new Map();
+    }
+    
+    async saveUserConversation(conversationId, conversationData) {
+        if (!this.currentUser) return;
+        
+        const userId = this.currentUser.userId;
+        let userConvs = this.userConversations.get(userId);
+        if (!userConvs) {
+            userConvs = new Map();
+            this.userConversations.set(userId, userConvs);
+        }
+        
+        userConvs.set(conversationId, conversationData);
+        await this.saveUsers();
+    }
+    
+    deleteUserConversation(conversationId) {
+        if (!this.currentUser) return;
+        
+        const userId = this.currentUser.userId;
+        const userConvs = this.userConversations.get(userId);
+        if (userConvs) {
+            userConvs.delete(conversationId);
+            this.saveUsers();
+        }
+    }
+    
+    incrementUserMessageCount() {
+        if (!this.currentUser) return;
+        
+        const user = this.users.get(this.currentUser.email);
+        if (user) {
+            user.totalMessages = (user.totalMessages || 0) + 1;
+            this.saveUsers();
+        }
+    }
+    
+    getUserStats() {
+        if (!this.currentUser) return null;
+        
+        const user = this.users.get(this.currentUser.email);
+        if (!user) return null;
+        
+        const userConvs = this.userConversations.get(user.id);
+        const conversationCount = userConvs ? userConvs.size : 0;
+        
+        return {
+            name: user.name,
+            email: user.email,
+            conversationCount: conversationCount,
+            totalMessages: user.totalMessages || 0,
+            createdAt: user.createdAt,
+            lastLogin: user.lastLogin,
+            securityLevel: user.securityLevel || 'standard'
+        };
+    }
+    
+    async exportUserData() {
+        if (!this.currentUser) return null;
+        
+        const user = this.users.get(this.currentUser.email);
+        if (!user) return null;
+        
+        const userConvs = this.userConversations.get(user.id);
+        const conversations = userConvs ? Array.from(userConvs.values()) : [];
+        
+        const data = {
+            user: {
+                name: user.name,
+                email: user.email,
+                createdAt: user.createdAt,
+                lastLogin: user.lastLogin,
+                totalMessages: user.totalMessages || 0
+            },
+            conversations: conversations,
+            exportedAt: new Date().toISOString()
+        };
+        
+        return await this.security.exportData(data);
+    }
+    
+    getInitials(name) {
+        if (!name) return 'U';
+        return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+    }
+    
+    getFirstName(name) {
+        if (!name) return '';
+        return name.split(' ')[0];
+    }
+    
+    getFirstLetter(name) {
+        if (!name) return 'E';
+        return name.trim().charAt(0).toUpperCase();
+    }
+    
+    validateSession() {
+        if (!this.currentUser) return false;
+        return this.security.validateSessionToken(this.currentUser.token);
+    }
+}
+
+// =============================================
+// APPLICATION PRINCIPALE AVEC SÉCURITÉ
+// =============================================
+
 class ElarakiGPT {
     constructor() {
         this.conversation = [];
@@ -5,7 +663,49 @@ class ElarakiGPT {
         this.captchaVerified = false;
         this.captchaText = '';
         
-        // Éléments DOM
+        // Gestionnaire d'utilisateurs sécurisé
+        this.userManager = new SecureUserManager();
+        
+        // Initialiser les éléments DOM
+        this.initDOMElements();
+        this.createAuthButtons();
+        
+        // Configuration API
+        this.apiConfigs = [
+            {
+                name: "Groq",
+                url: "https://api.groq.com/openai/v1/chat/completions",
+                key: "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",
+                models: ["llama-3.3-70b-versatile"],
+                priority: 10
+            },
+            {
+                name: "Mistral AI",
+                url: "https://api.mistral.ai/v1/chat/completions",
+                key: "L24VRJ7c2wjX50xYdqxDG8UXPSFeO1mM",
+                models: ["mistral-small-latest"],
+                priority: 9
+            }
+        ];
+        
+        this.currentApiIndex = 0;
+        this.currentConfig = this.apiConfigs[this.currentApiIndex];
+        this.apiKey = this.currentConfig.key;
+        this.apiUrl = this.currentConfig.url;
+        this.model = this.currentConfig.models[0];
+        
+        this.workingAPIs = new Set();
+        this.failedAPIs = new Set();
+        
+        this.currentConversationId = null;
+        this.conversations = new Map();
+        this.conversationTitles = new Map();
+        
+        this.init();
+    }
+    
+    initDOMElements() {
+        // Éléments de base
         this.chatMessages = document.getElementById('chat-messages');
         this.messageInput = document.getElementById('message-input');
         this.sendBtn = document.getElementById('send-btn');
@@ -41,146 +741,160 @@ class ElarakiGPT {
         this.submitCaptchaBtn = document.getElementById('submit-captcha');
         this.captchaError = document.getElementById('captcha-error');
         
-        // 🚀 APIS QUI MARCHENT VRAIMENT
-        this.apiConfigs = [
-            {
-                name: "Groq",
-                url: "https://api.groq.com/openai/v1/chat/completions",
-                key: "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",
-                models: ["llama-3.3-70b-versatile"],
-                priority: 10,
-                usage: 0,
-                lastUsed: 0,
-                status: 'untested'
-            },
-            {
-                name: "Mistral AI",
-                url: "https://api.mistral.ai/v1/chat/completions",
-                key: "L24VRJ7c2wjX50xYdqxDG8UXPSFeO1mM",
-                models: ["mistral-small-latest"],
-                priority: 9,
-                usage: 0,
-                lastUsed: 0,
-                status: 'untested'
-            },
-            {
-                name: "OpenRouter",
-                url: "https://openrouter.ai/api/v1/chat/completions",
-                key: "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",
-                models: ["openai/gpt-3.5-turbo"],
-                priority: 8,
-                usage: 0,
-                lastUsed: 0,
-                status: 'untested',
-                headers: {
-                    'HTTP-Referer': 'https://elaraki.ac.ma',
-                    'X-Title': 'Elaraki GPT'
-                }
-            },
-            {
-                name: "Google Gemini",
-                url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent",
-                key: "AIzaSyAcxlOoyo3EHT3rvKl1TtVHyPAAheI8CUw",
-                models: ["gemini-2.0-flash-exp"],
-                priority: 7,
-                usage: 0,
-                lastUsed: 0,
-                status: 'untested'
+        // Authentification
+        this.loginModal = document.getElementById('login-modal');
+        this.profileModal = document.getElementById('profile-modal');
+        this.changePasswordModal = document.getElementById('change-password-modal');
+        this.securityAlertModal = document.getElementById('security-alert-modal');
+        this.closeLoginModal = document.getElementById('close-login-modal');
+        this.closeProfileModal = document.getElementById('close-profile-modal');
+        this.closeChangePasswordModal = document.getElementById('close-change-password-modal');
+        this.closeSecurityAlertModal = document.getElementById('close-security-alert-modal');
+        this.securityAlertConfirm = document.getElementById('security-alert-confirm');
+        
+        // Forms
+        this.loginForm = document.getElementById('login-form');
+        this.registerForm = document.getElementById('register-form');
+        this.loginEmail = document.getElementById('login-email');
+        this.loginPassword = document.getElementById('login-password');
+        this.loginError = document.getElementById('login-error');
+        this.registerName = document.getElementById('register-name');
+        this.registerEmail = document.getElementById('register-email');
+        this.registerPassword = document.getElementById('register-password');
+        this.registerConfirm = document.getElementById('register-confirm');
+        this.registerError = document.getElementById('register-error');
+        this.loginSubmit = document.getElementById('login-submit');
+        this.registerSubmit = document.getElementById('register-submit');
+        this.switchToRegister = document.getElementById('switch-to-register');
+        this.switchToLogin = document.getElementById('switch-to-login');
+        this.changePasswordBtn = document.getElementById('change-password-btn');
+        this.exportDataBtn = document.getElementById('export-data-btn');
+        this.logoutBtn = document.getElementById('logout-btn');
+        this.updatePasswordBtn = document.getElementById('update-password-btn');
+        this.currentPassword = document.getElementById('current-password');
+        this.newPassword = document.getElementById('new-password');
+        this.confirmNewPassword = document.getElementById('confirm-new-password');
+        this.passwordError = document.getElementById('password-error');
+        
+        // Password strength
+        this.passwordStrength = document.getElementById('password-strength');
+        this.strengthBar = this.passwordStrength?.querySelector('.strength-bar');
+        this.strengthText = this.passwordStrength?.querySelector('.strength-text');
+        
+        // Header authentication elements
+        this.headerControls = document.querySelector('.header-controls');
+        
+        // Éléments sidebar user
+        this.sidebarUserSection = document.getElementById('sidebar-user-section');
+        this.sidebarUserAvatar = document.getElementById('sidebar-user-avatar');
+        this.sidebarUserName = document.getElementById('sidebar-user-name');
+        this.welcomeUserMessage = document.getElementById('welcome-user-message');
+    }
+    
+    createAuthButtons() {
+        this.authButtonContainer = document.querySelector('.auth-button-container');
+        this.authButtonContainer.innerHTML = '';
+        
+        if (this.userManager.currentUser && this.userManager.validateSession()) {
+            this.createProfileButton();
+        } else {
+            this.createLoginButton();
+            // Session invalide, nettoyer
+            if (this.userManager.currentUser) {
+                this.userManager.logout();
             }
-        ];
+        }
         
-        this.currentApiIndex = 0;
-        this.currentConfig = this.apiConfigs[this.currentApiIndex];
-        this.apiKey = this.currentConfig.key;
-        this.apiUrl = this.currentConfig.url;
-        this.model = this.currentConfig.models[0];
+        this.updateSidebarUserInfo();
+        this.updateWelcomeMessage();
+    }
+    
+    createLoginButton() {
+        this.authButtonContainer.innerHTML = '';
+        const loginBtn = document.createElement('button');
+        loginBtn.className = 'action-btn login-btn';
+        loginBtn.innerHTML = '<span>Se connecter</span>';
+        loginBtn.addEventListener('click', () => this.showModal(this.loginModal));
+        this.authButtonContainer.appendChild(loginBtn);
+    }
+    
+    createProfileButton() {
+        this.authButtonContainer.innerHTML = '';
+        const profileBtn = document.createElement('button');
+        profileBtn.className = 'user-profile-btn';
+        const user = this.userManager.users.get(this.userManager.currentUser.email);
+        const name = user ? user.name : 'Utilisateur';
+        profileBtn.innerHTML = `
+            <div class="user-avatar-small">${this.userManager.getInitials(name)}</div>
+            <span class="user-name">${this.userManager.getFirstName(name)}</span>
+        `;
+        profileBtn.addEventListener('click', () => this.showProfileModal());
+        this.authButtonContainer.appendChild(profileBtn);
+    }
+    
+    updateSidebarUserInfo() {
+        if (this.userManager.currentUser && this.userManager.validateSession()) {
+            const user = this.userManager.users.get(this.userManager.currentUser.email);
+            if (user) {
+                this.sidebarUserAvatar.textContent = this.userManager.getFirstLetter(user.name);
+                this.sidebarUserName.textContent = user.name;
+            }
+        } else {
+            this.sidebarUserAvatar.textContent = 'E';
+            this.sidebarUserName.textContent = 'Elaraki GPT';
+        }
         
-        this.workingAPIs = new Set();
-        this.failedAPIs = new Set();
+        // Conserver la couleur fixe
+        this.sidebarUserAvatar.style.background = 'var(--gradient-primary)';
+        this.sidebarUserName.style.color = 'var(--text-dark)';
+    }
+    
+    updateWelcomeMessage() {
+        if (!this.welcomeUserMessage) return;
         
-        this.currentConversationId = null;
-        this.conversations = new Map();
-        this.conversationTitles = new Map();
+        if (this.userManager.currentUser && this.userManager.validateSession()) {
+            const user = this.userManager.users.get(this.userManager.currentUser.email);
+            if (user) {
+                this.welcomeUserMessage.innerHTML = `
+                    <h3>Bonjour ${user.name} ! 👋</h3>
+                    <p>Vos conversations sont sécurisées et sauvegardées.</p>
+                `;
+                this.welcomeUserMessage.style.display = 'block';
+                return;
+            }
+        }
         
-        this.init();
+        this.welcomeUserMessage.innerHTML = '';
+        this.welcomeUserMessage.style.display = 'none';
+    }
+    
+    showProfileModal() {
+        const stats = this.userManager.getUserStats();
+        if (stats) {
+            document.getElementById('profile-avatar').textContent = 
+                this.userManager.getInitials(stats.name);
+            document.getElementById('profile-name').textContent = stats.name;
+            document.getElementById('profile-email').textContent = stats.email;
+            document.getElementById('profile-conversations').textContent = stats.conversationCount;
+            document.getElementById('profile-messages').textContent = stats.totalMessages;
+            document.getElementById('profile-created').textContent = 
+                new Date(stats.createdAt).toLocaleDateString('fr-FR');
+        }
+        this.showModal(this.profileModal);
     }
     
     init() {
-        // Écouteurs d'événements de base
-        this.sendBtn.addEventListener('click', () => this.handleSendMessage());
-        this.messageInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                this.handleSendMessage();
-            }
-        });
+        // Vérifier la session au démarrage
+        this.checkSession();
         
-        this.clearBtn.addEventListener('click', () => this.clearConversation());
-        this.aboutBtn.addEventListener('click', () => this.showModal(this.aboutModal));
-        this.contactBtn.addEventListener('click', () => this.showModal(this.contactModal));
-        this.closeAboutModal.addEventListener('click', () => this.hideModal(this.aboutModal));
-        this.closeContactModal.addEventListener('click', () => this.hideModal(this.contactModal));
-        
-        // Fermer les modales en cliquant sur le fond (sauf CAPTCHA)
-        [this.aboutModal, this.contactModal].forEach(modal => {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    this.hideModal(modal);
-                }
-            });
-        });
-        
-        // Empêcher la fermeture du CAPTCHA par clic sur le fond
-        this.captchaModal.addEventListener('click', (e) => {
-            if (e.target === this.captchaModal || e.target.classList.contains('modal-backdrop')) {
-                e.preventDefault();
-                e.stopPropagation();
-                // Animation pour indiquer que c'est obligatoire
-                this.captchaModal.classList.add('shake');
-                setTimeout(() => this.captchaModal.classList.remove('shake'), 500);
-            }
-        });
-        
-        // Boutons d'actions rapides
-        document.querySelectorAll('.quick-action-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const prompt = e.target.getAttribute('data-prompt') || 
-                             e.target.closest('.quick-action-btn').getAttribute('data-prompt');
-                this.messageInput.value = prompt;
-                this.handleSendMessage();
-            });
-        });
-        
-        // Redimensionnement automatique du textarea
-        this.messageInput.addEventListener('input', () => {
-            this.autoResizeTextarea();
-        });
-        
-        // Sidebar
-        this.newChatBtn.addEventListener('click', () => this.startNewChat());
-        this.toggleSidebar.addEventListener('click', () => this.toggleSidebarVisibility());
-        this.sidebarOverlay.addEventListener('click', () => this.hideSidebarMobile());
-        this.menuToggleBtn.addEventListener('click', () => this.toggleSidebarVisibility());
-        
-        // Mode Sombre
-        this.themeToggleBtn.addEventListener('click', () => this.toggleTheme());
-        
-        // CAPTCHA
-        this.refreshCaptchaBtn.addEventListener('click', () => this.generateCaptcha());
-        this.submitCaptchaBtn.addEventListener('click', () => this.verifyCaptcha());
-        this.captchaInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                this.verifyCaptcha();
-            }
-        });
+        // Écouteurs d'événements
+        this.setupEventListeners();
         
         // Charger l'état initial
-        this.loadSavedConversations();
         this.loadThemePreference();
         this.generateCaptcha();
         
-        // Vérifier CAPTCHA au démarrage (obligatoire)
+        // Vérifier CAPTCHA au démarrage
         this.checkCaptchaOnStart();
         
         // Créer une nouvelle conversation
@@ -190,25 +904,154 @@ class ElarakiGPT {
         window.addEventListener('resize', () => this.handleResize());
         this.handleResize();
         
-        // Tester les APIs
-        setTimeout(() => this.testAPIsSequentially(), 1500);
-        
         // Animation des actions rapides
         setTimeout(() => {
-            this.quickActions.classList.add('show');
+            if (this.quickActions) {
+                this.quickActions.classList.add('show');
+            }
         }, 1000);
     }
     
-    // 🔐 GESTION CAPTCHA OBLIGATOIRE
+    checkSession() {
+        if (this.userManager.currentUser) {
+            if (this.userManager.validateSession()) {
+                this.loadUserConversations();
+                this.updateWelcomeMessage();
+                this.updateSidebarUserInfo();
+            } else {
+                // Session expirée
+                this.userManager.logout();
+                this.createLoginButton();
+                this.showNotification('Session expirée. Veuillez vous reconnecter.', 'error');
+            }
+        } else {
+            // Afficher le modal de connexion après le CAPTCHA
+            setTimeout(() => {
+                if (!this.userManager.currentUser) {
+                    this.showModal(this.loginModal);
+                }
+            }, 1500);
+        }
+    }
+    
+    setupEventListeners() {
+        // Message sending
+        this.sendBtn.addEventListener('click', () => this.handleSendMessage());
+        this.messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.handleSendMessage();
+            }
+        });
+        
+        // Clear conversation
+        this.clearBtn.addEventListener('click', () => this.clearConversation());
+        
+        // Modal buttons
+        this.aboutBtn.addEventListener('click', () => this.showModal(this.aboutModal));
+        this.contactBtn.addEventListener('click', () => this.showModal(this.contactModal));
+        this.closeAboutModal.addEventListener('click', () => this.hideModal(this.aboutModal));
+        this.closeContactModal.addEventListener('click', () => this.hideModal(this.contactModal));
+        
+        // Close modals on backdrop click
+        [this.aboutModal, this.contactModal, this.loginModal, this.profileModal, this.changePasswordModal].forEach(modal => {
+            modal?.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    this.hideModal(modal);
+                }
+            });
+        });
+        
+        // Prevent CAPTCHA closing
+        this.captchaModal?.addEventListener('click', (e) => {
+            if (e.target === this.captchaModal || e.target.classList.contains('modal-backdrop')) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.captchaModal.classList.add('shake');
+                setTimeout(() => this.captchaModal.classList.remove('shake'), 500);
+            }
+        });
+        
+        // Quick actions
+        document.querySelectorAll('.quick-action-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const prompt = e.target.getAttribute('data-prompt') || 
+                             e.target.closest('.quick-action-btn').getAttribute('data-prompt');
+                this.messageInput.value = prompt;
+                this.handleSendMessage();
+            });
+        });
+        
+        // Textarea auto-resize
+        this.messageInput?.addEventListener('input', () => {
+            this.autoResizeTextarea();
+        });
+        
+        // Sidebar
+        this.newChatBtn?.addEventListener('click', () => this.startNewChat());
+        this.toggleSidebar?.addEventListener('click', () => this.toggleSidebarVisibility());
+        this.sidebarOverlay?.addEventListener('click', () => this.hideSidebarMobile());
+        this.menuToggleBtn?.addEventListener('click', () => this.toggleSidebarVisibility());
+        
+        // Theme toggle
+        this.themeToggleBtn?.addEventListener('click', () => this.toggleTheme());
+        
+        // CAPTCHA
+        this.refreshCaptchaBtn?.addEventListener('click', () => this.generateCaptcha());
+        this.submitCaptchaBtn?.addEventListener('click', () => this.verifyCaptcha());
+        this.captchaInput?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.verifyCaptcha();
+            }
+        });
+        
+        // Authentication
+        this.closeLoginModal?.addEventListener('click', () => this.hideModal(this.loginModal));
+        this.closeProfileModal?.addEventListener('click', () => this.hideModal(this.profileModal));
+        this.closeChangePasswordModal?.addEventListener('click', () => this.hideModal(this.changePasswordModal));
+        this.closeSecurityAlertModal?.addEventListener('click', () => this.hideModal(this.securityAlertModal));
+        this.securityAlertConfirm?.addEventListener('click', () => this.hideModal(this.securityAlertModal));
+        
+        // Form switching
+        this.switchToRegister?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.loginForm.classList.remove('active');
+            this.registerForm.classList.add('active');
+        });
+        
+        this.switchToLogin?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.registerForm.classList.remove('active');
+            this.loginForm.classList.add('active');
+        });
+        
+        // Form submissions
+        this.loginSubmit?.addEventListener('click', () => this.handleLogin());
+        this.registerSubmit?.addEventListener('click', () => this.handleRegister());
+        
+        // Password strength
+        this.registerPassword?.addEventListener('input', () => this.updatePasswordStrength());
+        
+        // Profile actions
+        this.changePasswordBtn?.addEventListener('click', () => {
+            this.hideModal(this.profileModal);
+            this.showModal(this.changePasswordModal);
+        });
+        
+        this.exportDataBtn?.addEventListener('click', () => this.exportUserData());
+        this.logoutBtn?.addEventListener('click', () => this.handleLogout());
+        this.updatePasswordBtn?.addEventListener('click', () => this.handleChangePassword());
+    }
+    
+    // 🔐 GESTION CAPTCHA
     checkCaptchaOnStart() {
-        // Vérifier si le CAPTCHA a déjà été validé dans cette session
         const captchaVerified = sessionStorage.getItem('captchaVerified');
         
         if (captchaVerified === 'true') {
             this.captchaVerified = true;
             this.updateStatus("CAPTCHA vérifié - Prêt à discuter");
         } else {
-            // Afficher le CAPTCHA obligatoire
             setTimeout(() => {
                 this.showModal(this.captchaModal);
                 this.captchaInput.focus();
@@ -233,12 +1076,10 @@ class ElarakiGPT {
         
         if (userInput === this.captchaText) {
             this.captchaVerified = true;
-            // Sauvegarder en session pour éviter de redemander
             sessionStorage.setItem('captchaVerified', 'true');
             this.hideModal(this.captchaModal);
             this.updateStatus("CAPTCHA vérifié - Prêt à discuter");
             
-            // Activer l'interface
             this.enableChatInterface();
         } else {
             this.captchaError.style.display = 'block';
@@ -248,13 +1089,215 @@ class ElarakiGPT {
     }
     
     enableChatInterface() {
-        // Activer le champ de saisie
         this.messageInput.disabled = false;
         this.messageInput.placeholder = "Posez votre question à Elaraki GPT...";
         this.sendBtn.disabled = false;
-        
-        // Mettre à jour le statut
         this.updateStatus("Elaraki GPT est prêt");
+    }
+    
+    // 👤 GESTION AUTHENTIFICATION
+    async handleLogin() {
+        const email = this.loginEmail.value.trim();
+        const password = this.loginPassword.value.trim();
+        
+        this.loginError.textContent = '';
+        
+        if (!email || !password) {
+            this.loginError.textContent = 'Veuillez remplir tous les champs';
+            return;
+        }
+        
+        const result = await this.userManager.login(email, password);
+        
+        if (result.success) {
+            this.hideModal(this.loginModal);
+            this.createProfileButton();
+            this.loadUserConversations();
+            this.updateWelcomeMessage();
+            this.updateSidebarUserInfo();
+            this.showNotification(`Bienvenue ${result.user.name} !`);
+        } else {
+            this.loginError.textContent = result.message;
+        }
+    }
+    
+    async handleRegister() {
+        const name = this.registerName.value.trim();
+        const email = this.registerEmail.value.trim();
+        const password = this.registerPassword.value.trim();
+        const confirm = this.registerConfirm.value.trim();
+        
+        this.registerError.textContent = '';
+        
+        // Validation
+        if (!name || !email || !password || !confirm) {
+            this.registerError.textContent = 'Tous les champs sont obligatoires';
+            return;
+        }
+        
+        if (password !== confirm) {
+            this.registerError.textContent = 'Les mots de passe ne correspondent pas';
+            return;
+        }
+        
+        const result = await this.userManager.register(name, email, password);
+        
+        if (result.success) {
+            this.hideModal(this.loginModal);
+            this.createProfileButton();
+            this.loadUserConversations();
+            this.updateWelcomeMessage();
+            this.updateSidebarUserInfo();
+            this.showNotification(`Compte créé avec succès ! Bienvenue ${result.user.name}`);
+            
+            // Réinitialiser le formulaire
+            this.registerForm.classList.remove('active');
+            this.loginForm.classList.add('active');
+            this.registerName.value = '';
+            this.registerEmail.value = '';
+            this.registerPassword.value = '';
+            this.registerConfirm.value = '';
+        } else {
+            this.registerError.textContent = result.message;
+        }
+    }
+    
+    handleLogout() {
+        const result = this.userManager.logout();
+        
+        if (result.success) {
+            this.hideModal(this.profileModal);
+            this.createLoginButton();
+            this.conversations = new Map();
+            this.conversationTitles = new Map();
+            this.currentConversationId = null;
+            this.conversation = [];
+            this.chatMessages.innerHTML = '';
+            this.showWelcomeSection();
+            this.updateConversationsList();
+            this.updateWelcomeMessage();
+            this.updateSidebarUserInfo();
+            this.showNotification('Déconnexion réussie');
+        }
+    }
+    
+    async handleChangePassword() {
+        const current = this.currentPassword.value.trim();
+        const newPass = this.newPassword.value.trim();
+        const confirm = this.confirmNewPassword.value.trim();
+        
+        this.passwordError.textContent = '';
+        
+        if (!current || !newPass || !confirm) {
+            this.passwordError.textContent = 'Tous les champs sont obligatoires';
+            return;
+        }
+        
+        if (newPass !== confirm) {
+            this.passwordError.textContent = 'Les nouveaux mots de passe ne correspondent pas';
+            return;
+        }
+        
+        const result = await this.userManager.changePassword(current, newPass);
+        
+        if (result.success) {
+            this.hideModal(this.changePasswordModal);
+            this.showNotification('Mot de passe mis à jour avec succès');
+            
+            // Réinitialiser les champs
+            this.currentPassword.value = '';
+            this.newPassword.value = '';
+            this.confirmNewPassword.value = '';
+        } else {
+            this.passwordError.textContent = result.message;
+        }
+    }
+    
+    updatePasswordStrength() {
+        const password = this.registerPassword.value;
+        const strength = this.userManager.security.checkPasswordStrength(password);
+        
+        if (this.strengthBar && this.strengthText) {
+            const colors = ['#dc2626', '#ef4444', '#f59e0b', '#84cc16', '#10b981'];
+            const texts = ['Très faible', 'Faible', 'Moyen', 'Fort', 'Très fort'];
+            
+            this.strengthBar.style.width = `${strength * 20}%`;
+            this.strengthBar.style.background = colors[strength - 1] || colors[0];
+            this.strengthText.textContent = texts[strength - 1] || texts[0];
+        }
+    }
+    
+    async exportUserData() {
+        const data = await this.userManager.exportUserData();
+        
+        if (data) {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `elaraki-gpt-data-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            this.showNotification('Données exportées avec succès');
+        }
+    }
+    
+    loadUserConversations() {
+        if (this.userManager.currentUser) {
+            this.conversations = this.userManager.getUserConversations();
+            
+            this.conversationTitles = new Map();
+            this.conversations.forEach((data, id) => {
+                this.conversationTitles.set(id, data.title);
+            });
+            
+            this.updateConversationsList();
+        }
+    }
+    
+    showNotification(message, type = 'success') {
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? 'var(--accent-green)' : 'var(--accent-red)'};
+            color: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            box-shadow: var(--shadow-strong);
+            z-index: 3000;
+            animation: slideIn 0.3s ease;
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+        
+        // Ajouter les animations CSS si nécessaire
+        if (!document.querySelector('#notification-styles')) {
+            const style = document.createElement('style');
+            style.id = 'notification-styles';
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes slideOut {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(100%); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
     }
     
     handleSendMessage() {
@@ -263,6 +1306,13 @@ class ElarakiGPT {
             this.captchaInput.focus();
             return;
         }
+        
+        if (!this.userManager.currentUser || !this.userManager.validateSession()) {
+            this.showModal(this.loginModal);
+            this.showNotification('Veuillez vous connecter pour utiliser le chat', 'error');
+            return;
+        }
+        
         this.sendMessage();
     }
     
@@ -272,6 +1322,8 @@ class ElarakiGPT {
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', newTheme);
         localStorage.setItem('theme', newTheme);
+        
+        this.updateSidebarUserInfo();
     }
     
     loadThemePreference() {
@@ -305,24 +1357,17 @@ class ElarakiGPT {
             this.apiUrl = this.currentConfig.url;
             this.model = this.currentConfig.models[0];
             
-            console.log(`🎯 Utilisation: ${this.currentConfig.name} - ${this.model}`);
-            
             let response;
             let attempts = 0;
             const maxAttempts = 2;
             
             while (attempts < maxAttempts) {
                 try {
-                    const startTime = Date.now();
                     response = await this.getAIResponseAPI(message);
-                    const responseTime = Date.now() - startTime;
-                    
-                    console.log(`✅ Succès en ${responseTime}ms`);
                     break;
-                    
                 } catch (apiError) {
                     attempts++;
-                    console.log(`❌ Tentative ${attempts} échouée: ${apiError.message}`);
+                    console.log(`Tentative ${attempts} échouée: ${apiError.message}`);
                     
                     if (attempts < maxAttempts) {
                         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -333,20 +1378,21 @@ class ElarakiGPT {
                             this.apiKey = this.currentConfig.key;
                             this.apiUrl = this.currentConfig.url;
                             this.model = this.currentConfig.models[0];
-                            console.log(`🔄 Changement vers: ${this.currentConfig.name}`);
                         }
                     }
                 }
             }
             
             if (!response) {
-                console.log("⚠️ Toutes les APIs échouées, mode local");
                 response = await this.getLocalResponse(message);
             }
             
             this.addMessage('assistant', response);
             this.conversation.push({ role: "user", content: message });
             this.conversation.push({ role: "assistant", content: response });
+            
+            // Incrémenter le compteur de messages
+            this.userManager.incrementUserMessageCount();
             
             this.saveCurrentConversation();
             
@@ -370,73 +1416,37 @@ class ElarakiGPT {
         
         this.conversation.push({ role: "user", content: userMessage });
         
-        if (config.name === "Google Gemini") {
-            const url = `${config.url}?key=${config.key}`;
-            
-            const contents = this.conversation.map(msg => ({
-                role: msg.role === 'assistant' ? 'model' : 'user',
-                parts: [{ text: msg.content }]
-            }));
-            
-            requestBody = { contents };
-            
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify(requestBody),
-                signal: AbortSignal.timeout(15000)
-            });
-            
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const data = await response.json();
-            
-            if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
-                throw new Error('Réponse invalide');
-            }
-            
-            const assistantMessage = data.candidates[0].content.parts[0].text;
-            this.conversation.push({ role: "assistant", content: assistantMessage });
-            return assistantMessage;
-            
-        } else {
-            if (config.key) {
-                headers['Authorization'] = `Bearer ${config.key}`;
-            }
-            
-            if (config.headers) {
-                Object.assign(headers, config.headers);
-            }
-            
-            requestBody = {
-                model: this.model,
-                messages: this.conversation,
-                max_tokens: 800,
-                temperature: 0.7
-            };
-            
-            const response = await fetch(config.url, {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify(requestBody),
-                signal: AbortSignal.timeout(15000)
-            });
-            
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const data = await response.json();
-            
-            let assistantMessage;
-            
-            if (data.choices?.[0]?.message?.content) {
-                assistantMessage = data.choices[0].message.content;
-            } else if (data.content?.[0]?.text) {
-                assistantMessage = data.content[0].text;
-            } else {
-                throw new Error('Format de réponse non reconnu');
-            }
-            
-            this.conversation.push({ role: "assistant", content: assistantMessage });
-            return assistantMessage;
+        if (config.key) {
+            headers['Authorization'] = `Bearer ${config.key}`;
         }
+        
+        requestBody = {
+            model: this.model,
+            messages: this.conversation,
+            max_tokens: 800,
+            temperature: 0.7
+        };
+        
+        const response = await fetch(config.url, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(requestBody),
+            signal: AbortSignal.timeout(15000)
+        });
+        
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        
+        let assistantMessage;
+        
+        if (data.choices?.[0]?.message?.content) {
+            assistantMessage = data.choices[0].message.content;
+        } else {
+            throw new Error('Format de réponse non reconnu');
+        }
+        
+        this.conversation.push({ role: "assistant", content: assistantMessage });
+        return assistantMessage;
     }
     
     async getLocalResponse(userMessage) {
@@ -463,115 +1473,14 @@ class ElarakiGPT {
         return "Je suis l'assistant Elaraki GPT spécialisé sur notre école. Pour des informations précises :\n\n📞 **Téléphone:** +212 543-05544\n📧 **Email:** info@elaraki.ac.ma\n🌐 **Site:** elaraki.ac.ma\n\nPosez-moi une question spécifique sur notre établissement !";
     }
     
-    // 🧪 TESTER LES APIS
-    async testAPIsSequentially() {
-        console.log('🔍 Test des APIs...');
-        this.updateStatus("Initialisation...");
-        
-        for (let i = 0; i < this.apiConfigs.length; i++) {
-            await this.testAPI(i);
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-        
-        const workingCount = this.workingAPIs.size;
-        console.log(`✅ ${workingCount}/${this.apiConfigs.length} APIs fonctionnent`);
-        
-        if (workingCount > 0) {
-            this.updateStatus(`${workingCount} APIs actives`);
-        } else {
-            this.updateStatus("Mode local activé");
-        }
-    }
-    
-    async testAPI(apiIndex) {
-        const config = this.apiConfigs[apiIndex];
-        const startTime = Date.now();
-        
-        try {
-            console.log(`🧪 Test ${config.name}...`);
-            
-            if (config.name === "Free GPT") {
-                this.workingAPIs.add(apiIndex);
-                config.status = 'working';
-                console.log(`✅ ${config.name} (proxy présumé fonctionnel)`);
-                return;
-            }
-            
-            let testUrl = config.url;
-            let testBody = {};
-            let headers = {
-                'Content-Type': 'application/json'
-            };
-            
-            if (config.name === "Google Gemini") {
-                testUrl = `${config.url}?key=${config.key}`;
-                testBody = {
-                    contents: [{
-                        parts: [{ text: "test" }]
-                    }]
-                };
-            } else {
-                headers['Authorization'] = `Bearer ${config.key}`;
-                if (config.headers) {
-                    Object.assign(headers, config.headers);
-                }
-                testBody = {
-                    model: config.models[0],
-                    messages: [{ role: "user", content: "test" }],
-                    max_tokens: 1
-                };
-            }
-            
-            const response = await fetch(testUrl, {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify(testBody),
-                signal: AbortSignal.timeout(8000)
-            });
-            
-            const responseTime = Date.now() - startTime;
-            
-            if (response.ok || response.status === 400 || response.status === 422 || response.status === 429) {
-                this.workingAPIs.add(apiIndex);
-                config.status = 'working';
-                console.log(`✅ ${config.name} fonctionne (${responseTime}ms)`);
-            } else {
-                this.failedAPIs.add(apiIndex);
-                config.status = 'failed';
-                console.log(`❌ ${config.name} échoué: HTTP ${response.status}`);
-            }
-        } catch (error) {
-            const responseTime = Date.now() - startTime;
-            this.failedAPIs.add(apiIndex);
-            config.status = 'failed';
-            console.log(`⚠️ ${config.name} erreur: ${error.message} (${responseTime}ms)`);
-        }
-    }
-    
     getBestAPI() {
         const availableAPIs = Array.from(this.workingAPIs);
-        
-        if (availableAPIs.length === 0) {
-            return 0;
-        }
-        
-        let bestApiIndex = availableAPIs[0];
-        let minUsage = this.apiConfigs[bestApiIndex].usage;
-        
-        for (const apiIndex of availableAPIs) {
-            const config = this.apiConfigs[apiIndex];
-            if (config.usage < minUsage) {
-                minUsage = config.usage;
-                bestApiIndex = apiIndex;
-            }
-        }
-        
-        return bestApiIndex;
+        return availableAPIs.length > 0 ? availableAPIs[0] : 0;
     }
     
     // 💾 GESTION CONVERSATIONS
     startNewChat() {
-        this.currentConversationId = 'chat_' + Date.now();
+        this.currentConversationId = 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         this.conversation = [];
         this.chatMessages.innerHTML = '';
         this.showWelcomeSection();
@@ -590,15 +1499,19 @@ class ElarakiGPT {
                 this.conversationTitles.set(this.currentConversationId, title);
             }
             
-            this.conversations.set(this.currentConversationId, {
+            const conversationData = {
                 messages: [...this.conversation],
                 title: this.conversationTitles.get(this.currentConversationId),
                 lastUpdated: Date.now(),
                 model: this.model,
                 api: this.currentConfig.name
-            });
+            };
             
-            this.saveToLocalStorage();
+            this.conversations.set(this.currentConversationId, conversationData);
+            
+            if (this.userManager.currentUser) {
+                this.userManager.saveUserConversation(this.currentConversationId, conversationData);
+            }
         }
     }
     
@@ -625,98 +1538,64 @@ class ElarakiGPT {
         }
     }
     
-    loadSavedConversations() {
-        const saved = localStorage.getItem('elarakiGPTConversations');
-        const savedTitles = localStorage.getItem('elarakiGPTConversationTitles');
-        
-        if (saved) {
-            try {
-                this.conversations = new Map(Object.entries(JSON.parse(saved)));
-            } catch (error) {
-                this.conversations = new Map();
-            }
-        }
-        
-        if (savedTitles) {
-            try {
-                this.conversationTitles = new Map(Object.entries(JSON.parse(savedTitles)));
-            } catch (error) {
-                this.conversationTitles = new Map();
-            }
-        }
-        
-        this.updateConversationsList();
-    }
-    
-    saveToLocalStorage() {
-        const conversationsObj = Object.fromEntries(this.conversations);
-        localStorage.setItem('elarakiGPTConversations', JSON.stringify(conversationsObj));
-        const titlesObj = Object.fromEntries(this.conversationTitles);
-        localStorage.setItem('elarakiGPTConversationTitles', JSON.stringify(titlesObj));
-    }
-    
     updateConversationsList() {
         if (!this.conversationsList) return;
         this.conversationsList.innerHTML = '';
         
-        const today = new Date().setHours(0, 0, 0, 0);
-        const lastWeek = today - (7 * 24 * 60 * 60 * 1000);
-        const last30Days = today - (30 * 24 * 60 * 60 * 1000);
-        
-        const todayConversations = [];
-        const weekConversations = [];
-        const monthConversations = [];
-        const olderConversations = [];
+        if (this.userManager.currentUser) {
+            const userInfo = document.createElement('div');
+            userInfo.className = 'conversation-group-title';
+            userInfo.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%;"></div>
+                    <span>${this.userManager.users.get(this.userManager.currentUser.email)?.name || 'Utilisateur'} - Conversations sécurisées</span>
+                </div>
+            `;
+            this.conversationsList.appendChild(userInfo);
+        }
         
         const sortedConversations = Array.from(this.conversations.entries())
             .sort(([,a], [,b]) => b.lastUpdated - a.lastUpdated);
         
-        sortedConversations.forEach(([id, data]) => {
-            const conversationDay = new Date(data.lastUpdated).setHours(0, 0, 0, 0);
-            if (conversationDay === today) todayConversations.push({id, data});
-            else if (conversationDay >= lastWeek) weekConversations.push({id, data});
-            else if (conversationDay >= last30Days) monthConversations.push({id, data});
-            else olderConversations.push({id, data});
-        });
-        
-        if (todayConversations.length > 0) this.createConversationGroup('Aujourd\'hui', todayConversations);
-        if (weekConversations.length > 0) this.createConversationGroup('7 derniers jours', weekConversations);
-        if (monthConversations.length > 0) this.createConversationGroup('30 derniers jours', monthConversations);
-        if (olderConversations.length > 0) this.createConversationGroup('Plus ancien', olderConversations);
-        
-        if (sortedConversations.length === 0) {
+        if (sortedConversations.length > 0) {
+            sortedConversations.forEach(([id, data]) => {
+                const conversationItem = document.createElement('div');
+                conversationItem.className = `conversation-item ${id === this.currentConversationId ? 'active' : ''}`;
+                conversationItem.innerHTML = `
+                    <div class="conversation-icon">💬</div>
+                    <div class="conversation-text">${data.title}</div>
+                    ${this.userManager.currentUser ? '<div class="conversation-saved" title="Sauvegardé de manière sécurisée">🔒</div>' : ''}
+                `;
+                conversationItem.addEventListener('click', () => this.loadConversation(id));
+                this.conversationsList.appendChild(conversationItem);
+            });
+        } else {
             const emptyState = document.createElement('div');
             emptyState.className = 'empty-state';
             emptyState.innerHTML = `
                 <div style="text-align: center; padding: 40px 20px; color: var(--text-light);">
                     <div style="font-size: 48px; margin-bottom: 10px;">💬</div>
                     <p>Aucune conversation</p>
+                    ${!this.userManager.currentUser ? '<p style="margin-top: 10px; font-size: 0.9rem;">Connectez-vous pour sauvegarder vos conversations</p>' : ''}
                 </div>
             `;
             this.conversationsList.appendChild(emptyState);
         }
     }
     
-    createConversationGroup(title, conversations) {
-        const group = document.createElement('div');
-        group.className = 'conversation-group';
-        const groupTitle = document.createElement('div');
-        groupTitle.className = 'conversation-group-title';
-        groupTitle.textContent = title;
-        group.appendChild(groupTitle);
-        
-        conversations.forEach(({id, data}) => {
-            const conversationItem = document.createElement('div');
-            conversationItem.className = `conversation-item ${id === this.currentConversationId ? 'active' : ''}`;
-            conversationItem.innerHTML = `
-                <div class="conversation-icon">💬</div>
-                <div class="conversation-text">${data.title}</div>
-            `;
-            conversationItem.addEventListener('click', () => this.loadConversation(id));
-            group.appendChild(conversationItem);
-        });
-        
-        this.conversationsList.appendChild(group);
+    clearConversation() {
+        this.conversation = [];
+        this.chatMessages.innerHTML = '';
+        this.showWelcomeSection();
+        if (this.currentConversationId) {
+            if (this.userManager.currentUser) {
+                this.userManager.deleteUserConversation(this.currentConversationId);
+            } else {
+                this.conversations.delete(this.currentConversationId);
+                this.conversationTitles.delete(this.currentConversationId);
+            }
+            this.updateConversationsList();
+        }
     }
     
     // 📱 SIDEBAR
@@ -782,7 +1661,9 @@ class ElarakiGPT {
     
     formatMarkdown(text) {
         if (!text) return '';
-        let formatted = text.replace(/\n/g, '<br>');
+        // Protection XSS
+        let safeText = this.userManager.security.sanitizeInput(text);
+        let formatted = safeText.replace(/\n/g, '<br>');
         formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
         return formatted;
@@ -820,25 +1701,15 @@ class ElarakiGPT {
         this.chatContainer.classList.add('hidden');
     }
     
-    clearConversation() {
-        this.conversation = [];
-        this.chatMessages.innerHTML = '';
-        this.showWelcomeSection();
-        if (this.currentConversationId) {
-            this.conversations.delete(this.currentConversationId);
-            this.conversationTitles.delete(this.currentConversationId);
-            this.saveToLocalStorage();
-            this.updateConversationsList();
-        }
-    }
-    
     showModal(modal) {
+        if (!modal) return;
         modal.classList.add('show');
         document.body.classList.add('modal-open');
         document.body.style.overflow = 'hidden';
     }
     
     hideModal(modal) {
+        if (!modal) return;
         modal.classList.remove('show');
         document.body.classList.remove('modal-open');
         document.body.style.overflow = 'auto';
@@ -847,5 +1718,11 @@ class ElarakiGPT {
 
 // Initialiser
 document.addEventListener('DOMContentLoaded', () => {
+    // Vérifier si l'API Web Crypto est disponible
+    if (!window.crypto || !window.crypto.subtle) {
+        alert('Votre navigateur ne supporte pas les fonctionnalités de sécurité nécessaires. Veuillez mettre à jour votre navigateur.');
+        return;
+    }
+    
     window.elarakiGPT = new ElarakiGPT();
 });
