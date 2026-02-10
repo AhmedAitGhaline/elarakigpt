@@ -9,7 +9,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
 </head>
 <body>
     <!-- Background Elements -->
@@ -47,25 +46,27 @@
     <!-- Overlay pour mobile -->
     <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
+    <!-- Signature de l'auteur -->
+    <div class="author-signature">
+        Made by: Ait Ghaline Ahmed
+    </div>
+
     <!-- Main Container -->
     <div class="main-container">
         <!-- Header avec Logo Élégant -->
         <header class="header">
             <div class="header-content">
                 <div class="logo-section">
+                    <button id="menu-toggle-btn" class="menu-toggle-btn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 12h18M3 6h18M3 18h18"/>
+                        </svg>
+                    </button>
                     <div class="logo-container">
                         <div class="logo-main">
-                            <button id="mobile-menu-btn" class="mobile-menu-btn">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M3 12h18M3 6h18M3 18h18"/>
-                                </svg>
-                            </button>
-                            <div class="logo-shield">
-                                <div class="shield-base">
-                                    <div class="shield-inner">
-                                        <img src="eagle-icon.png" alt="El Araki Eagle" class="eagle-icon">
-                                    </div>
-                                </div>
+                            <!-- Logo PNG de l'établissement -->
+                            <div class="logo-image-container">
+                                <img src="elarakilogo.png" alt="El Araki International School" class="elaraki-logo">
                             </div>
                             <div class="logo-text">
                                 <h1 class="school-name">El Araki International School</h1>
@@ -75,12 +76,30 @@
                     </div>
                 </div>
                 <div class="header-actions">
-                    <button class="action-btn about-btn" id="about-btn">
-                        <span>À Propos</span>
-                    </button>
-                    <button class="action-btn contact-btn" id="contact-btn">
-                        <span>Contact</span>
-                    </button>
+                    <div class="header-controls">
+                        <button id="theme-toggle-btn" class="theme-toggle-btn">
+                            <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="5"/>
+                                <line x1="12" y1="1" x2="12" y2="3"/>
+                                <line x1="12" y1="21" x2="12" y2="23"/>
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                                <line x1="1" y1="12" x2="3" y2="12"/>
+                                <line x1="21" y1="12" x2="23" y2="12"/>
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                            </svg>
+                            <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                            </svg>
+                        </button>
+                        <button class="action-btn about-btn" id="about-btn">
+                            <span>À Propos</span>
+                        </button>
+                        <button class="action-btn contact-btn" id="contact-btn">
+                            <span>Contact</span>
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="header-decoration">
@@ -95,7 +114,11 @@
                 <div class="welcome-section" id="welcome-section">
                     <div class="welcome-content">
                         <div class="welcome-icon">
-                            <img src="sparkle-icon.png" alt="Sparkle" class="real-icon">
+                            <!-- Sparkle SVG Icon -->
+                            <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
                         </div>
                         <h1 class="welcome-title">Bienvenue sur Elaraki GPT</h1>
                         <p class="welcome-subtitle">Votre assistant IA intelligent de l'École Internationale El Araki</p>
@@ -103,21 +126,34 @@
                         <div class="feature-grid">
                             <div class="feature-card">
                                 <div class="feature-icon">
-                                    <img src="graduation-icon.png" alt="Pédagogie Innovante" class="real-icon">
+                                    <!-- Graduation SVG Icon -->
+                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 14l9-5-9-5-9 5 9 5z"/>
+                                        <path d="M12 14v6l9-5M12 20l-9-5"/>
+                                        <path d="M12 14l9-5-9-5-9 5 9 5z" opacity=".5"/>
+                                    </svg>
                                 </div>
                                 <h3>Pédagogie Innovante</h3>
                                 <p>Assistance éducative et académique</p>
                             </div>
                             <div class="feature-card">
                                 <div class="feature-icon">
-                                    <img src="globe-icon.png" alt="Vision Internationale" class="real-icon">
+                                    <!-- Globe SVG Icon -->
+                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <line x1="2" y1="12" x2="22" y2="12"/>
+                                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                                    </svg>
                                 </div>
                                 <h3>Vision Internationale</h3>
                                 <p>Ouverture sur le monde et les cultures</p>
                             </div>
                             <div class="feature-card">
                                 <div class="feature-icon">
-                                    <img src="lightning-icon.png" alt="Réponses Instantanées" class="real-icon">
+                                    <!-- Lightning SVG Icon -->
+                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                                    </svg>
                                 </div>
                                 <h3>Réponses Instantanées</h3>
                                 <p>Technologie IA avancée</p>
@@ -136,19 +172,38 @@
                     <!-- Quick Actions -->
                     <div class="quick-actions" id="quick-actions">
                         <button class="quick-action-btn" data-prompt="Parle-moi de l'école El Araki International School">
-                            <img src="school-icon.png" alt="Notre École" class="action-icon">
+                            <!-- School SVG Icon -->
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                                <polyline points="9 22 9 12 15 12 15 22"/>
+                            </svg>
                             <span>Notre École</span>
                         </button>
                         <button class="quick-action-btn" data-prompt="Quels programmes académiques proposez-vous ?">
-                            <img src="programs-icon.png" alt="Programmes" class="action-icon">
+                            <!-- Programs SVG Icon -->
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                            </svg>
                             <span>Programmes</span>
                         </button>
                         <button class="quick-action-btn" data-prompt="Comment puis-je inscrire mon enfant ?">
-                            <img src="enrollment-icon.png" alt="Inscription" class="action-icon">
+                            <!-- Enrollment SVG Icon -->
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                <circle cx="8.5" cy="7" r="4"/>
+                                <line x1="20" y1="8" x2="20" y2="14"/>
+                                <line x1="23" y1="11" x2="17" y2="11"/>
+                            </svg>
                             <span>Inscription</span>
                         </button>
                         <button class="quick-action-btn" data-prompt="Quelles sont les valeurs de l'école ?">
-                            <img src="values-icon.png" alt="Valeurs" class="action-icon">
+                            <!-- Values SVG Icon -->
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="8" x2="12" y2="12"/>
+                                <line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
                             <span>Valeurs</span>
                         </button>
                     </div>
@@ -165,7 +220,11 @@
                                 aria-label="Votre message"
                             ></textarea>
                             <button id="send-btn" class="send-btn" aria-label="Envoyer le message">
-                                <img src="send-icon.png" alt="Envoyer" class="send-icon">
+                                <!-- Send SVG Icon -->
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="22" y1="2" x2="11" y2="13"/>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                                </svg>
                             </button>
                         </div>
                         <div class="input-footer">
@@ -174,7 +233,13 @@
                                 <span id="status-text">Elaraki GPT est prêt</span>
                             </div>
                             <button class="clear-btn" id="clear-btn">
-                                <img src="clear-icon.png" alt="Effacer" class="clear-icon">
+                                <!-- Clear SVG Icon -->
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                    <line x1="10" y1="11" x2="10" y2="17"/>
+                                    <line x1="14" y1="11" x2="14" y2="17"/>
+                                </svg>
                                 <span>Effacer la conversation</span>
                             </button>
                         </div>
@@ -184,23 +249,55 @@
         </main>
     </div>
 
+    <!-- CAPTCHA Modal - OBLIGATOIRE (sans bouton fermer) -->
+    <div class="modal" id="captcha-modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <!-- Logo positionné à gauche -->
+                <div class="modal-logo">
+                    <div class="logo-image-container mini">
+                        <img src="elarakilogo.png" alt="El Araki International School" class="elaraki-logo">
+                    </div>
+                </div>
+                <!-- Titre CENTRÉ -->
+                <h2>Vérification de sécurité</h2>
+                <!-- SUPPRIMÉ: Bouton fermer positionné à droite -->
+            </div>
+            <div class="modal-body">
+                <div class="captcha-container">
+                    <p>Veuillez saisir le texte ci-dessous pour continuer :</p>
+                    <div class="captcha-text" id="captcha-text"></div>
+                    <input type="text" id="captcha-input" class="captcha-input" placeholder="Saisir le texte ci-dessus" maxlength="6">
+                    <div class="captcha-error" id="captcha-error">Code incorrect. Veuillez réessayer.</div>
+                    <div class="captcha-buttons">
+                        <button id="refresh-captcha" class="captcha-btn captcha-refresh">Rafraîchir</button>
+                        <button id="submit-captcha" class="captcha-btn captcha-submit">Vérifier</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- About Modal -->
     <div class="modal" id="about-modal">
         <div class="modal-backdrop"></div>
         <div class="modal-content">
             <div class="modal-header">
+                <!-- Logo positionné à gauche -->
                 <div class="modal-logo">
-                    <div class="logo-shield mini">
-                        <div class="shield-base">
-                            <div class="shield-inner">
-                                <img src="eagle-icon.png" alt="El Araki Eagle" class="eagle-icon">
-                            </div>
-                        </div>
+                    <div class="logo-image-container mini">
+                        <img src="elarakilogo.png" alt="El Araki International School" class="elaraki-logo">
                     </div>
                 </div>
+                <!-- Titre CENTRÉ -->
                 <h2>À Propos d'Elaraki GPT</h2>
+                <!-- Bouton fermer positionné à droite -->
                 <button class="modal-close" id="close-about-modal">
-                    <img src="close-icon.png" alt="Fermer" class="close-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
                 </button>
             </div>
             <div class="modal-body">
@@ -216,19 +313,33 @@
                     <div class="stats-grid">
                         <div class="stat-item">
                             <div class="stat-icon">
-                                <img src="academic-icon.png" alt="Excellence Académique" class="real-icon">
+                                <!-- Academic SVG Icon -->
+                                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 14l9-5-9-5-9 5 9 5z"/>
+                                    <path d="M12 14v6l9-5M12 20l-9-5"/>
+                                </svg>
                             </div>
                             <div class="stat-label">Excellence Académique</div>
                         </div>
                         <div class="stat-item">
                             <div class="stat-icon">
-                                <img src="international-icon.png" alt="Vision Internationale" class="real-icon">
+                                <!-- International SVG Icon -->
+                                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <line x1="2" y1="12" x2="22" y2="12"/>
+                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                                </svg>
                             </div>
                             <div class="stat-label">Vision Internationale</div>
                         </div>
                         <div class="stat-item">
                             <div class="stat-icon">
-                                <img src="innovation-icon.png" alt="Innovation Pédagogique" class="real-icon">
+                                <!-- Innovation SVG Icon -->
+                                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                                    <polyline points="2 17 12 22 22 17"/>
+                                    <polyline points="2 12 12 17 22 12"/>
+                                </svg>
                             </div>
                             <div class="stat-label">Innovation Pédagogique</div>
                         </div>
@@ -243,16 +354,23 @@
         <div class="modal-backdrop"></div>
         <div class="modal-content">
             <div class="modal-header">
+                <!-- Titre CENTRÉ (sans logo à gauche pour cette modale) -->
                 <h2>Contactez-Nous</h2>
+                <!-- Bouton fermer positionné à droite -->
                 <button class="modal-close" id="close-contact-modal">
-                    <img src="close-icon.png" alt="Fermer" class="close-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
                 </button>
             </div>
             <div class="modal-body">
                 <div class="contact-info">
                     <div class="contact-item">
                         <div class="contact-icon">
-                            <img src="website-icon.png" alt="Site Web" class="real-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                            </svg>
                         </div>
                         <div class="contact-details">
                             <strong>Site Web</strong>
@@ -261,7 +379,10 @@
                     </div>
                     <div class="contact-item">
                         <div class="contact-icon">
-                            <img src="email-icon.png" alt="Email" class="real-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                <polyline points="22,6 12,13 2,6"/>
+                            </svg>
                         </div>
                         <div class="contact-details">
                             <strong>Email</strong>
@@ -270,7 +391,9 @@
                     </div>
                     <div class="contact-item">
                         <div class="contact-icon">
-                            <img src="phone-icon.png" alt="Téléphone" class="real-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+                            </svg>
                         </div>
                         <div class="contact-details">
                             <strong>Téléphone</strong>
@@ -279,7 +402,10 @@
                     </div>
                     <div class="contact-item">
                         <div class="contact-icon">
-                            <img src="location-icon.png" alt="Adresse" class="real-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+                                <circle cx="12" cy="10" r="3"/>
+                            </svg>
                         </div>
                         <div class="contact-details">
                             <strong>Adresse</strong>
