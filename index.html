@@ -9,10 +9,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Meta tags de sécurité -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://fonts.googleapis.com; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; img-src 'self' data:;">
-    <meta name="referrer" content="strict-origin-when-cross-origin">
 </head>
 <body>
     <!-- Background Elements -->
@@ -41,6 +37,7 @@
         
         <div class="sidebar-footer">
             <div class="user-section" id="sidebar-user-section">
+                <!-- Icône et nom seront mis à jour dynamiquement -->
                 <div class="user-avatar" id="sidebar-user-avatar">E</div>
                 <span class="user-name" id="sidebar-user-name">Elaraki GPT</span>
             </div>
@@ -124,6 +121,7 @@
                         <div class="welcome-user" id="welcome-user-message"></div>
                         
                         <div class="welcome-icon">
+                            <!-- Sparkle SVG Icon -->
                             <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
                                 <circle cx="12" cy="12" r="3"/>
@@ -135,6 +133,7 @@
                         <div class="feature-grid">
                             <div class="feature-card">
                                 <div class="feature-icon">
+                                    <!-- Graduation SVG Icon -->
                                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M12 14l9-5-9-5-9 5 9 5z"/>
                                         <path d="M12 14v6l9-5M12 20l-9-5"/>
@@ -146,6 +145,7 @@
                             </div>
                             <div class="feature-card">
                                 <div class="feature-icon">
+                                    <!-- Globe SVG Icon -->
                                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <circle cx="12" cy="12" r="10"/>
                                         <line x1="2" y1="12" x2="22" y2="12"/>
@@ -157,6 +157,7 @@
                             </div>
                             <div class="feature-card">
                                 <div class="feature-icon">
+                                    <!-- Lightning SVG Icon -->
                                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
                                     </svg>
@@ -170,6 +171,7 @@
 
                 <!-- Chat Container -->
                 <div class="chat-container hidden" id="chat-container">
+                    <!-- Chat Messages -->
                     <div class="chat-messages" id="chat-messages">
                         <!-- Messages will be dynamically added here -->
                     </div>
@@ -177,6 +179,7 @@
                     <!-- Quick Actions -->
                     <div class="quick-actions" id="quick-actions">
                         <button class="quick-action-btn" data-prompt="Parle-moi de l'école El Araki International School">
+                            <!-- School SVG Icon -->
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                                 <polyline points="9 22 9 12 15 12 15 22"/>
@@ -184,6 +187,7 @@
                             <span>Notre École</span>
                         </button>
                         <button class="quick-action-btn" data-prompt="Quels programmes académiques proposez-vous ?">
+                            <!-- Programs SVG Icon -->
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
                                 <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
@@ -191,6 +195,7 @@
                             <span>Programmes</span>
                         </button>
                         <button class="quick-action-btn" data-prompt="Comment puis-je inscrire mon enfant ?">
+                            <!-- Enrollment SVG Icon -->
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                                 <circle cx="8.5" cy="7" r="4"/>
@@ -200,6 +205,7 @@
                             <span>Inscription</span>
                         </button>
                         <button class="quick-action-btn" data-prompt="Quelles sont les valeurs de l'école ?">
+                            <!-- Values SVG Icon -->
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="12" cy="12" r="10"/>
                                 <line x1="12" y1="8" x2="12" y2="12"/>
@@ -221,6 +227,7 @@
                                 aria-label="Votre message"
                             ></textarea>
                             <button id="send-btn" class="send-btn" aria-label="Envoyer le message">
+                                <!-- Send SVG Icon -->
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <line x1="22" y1="2" x2="11" y2="13"/>
                                     <polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -233,6 +240,7 @@
                                 <span id="status-text">Elaraki GPT est prêt</span>
                             </div>
                             <button class="clear-btn" id="clear-btn">
+                                <!-- Clear SVG Icon -->
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="3 6 5 6 21 6"/>
                                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -253,12 +261,15 @@
         <div class="modal-backdrop"></div>
         <div class="modal-content">
             <div class="modal-header">
+                <!-- Logo positionné à gauche -->
                 <div class="modal-logo">
                     <div class="logo-image-container mini">
                         <img src="elarakilogo.png" alt="El Araki International School" class="elaraki-logo">
                     </div>
                 </div>
+                <!-- Titre CENTRÉ -->
                 <h2>Vérification de sécurité</h2>
+                <!-- SUPPRIMÉ: Bouton fermer positionné à droite -->
             </div>
             <div class="modal-body">
                 <div class="captcha-container">
@@ -300,11 +311,11 @@
                         <h3>Se connecter</h3>
                         <div class="auth-input-group">
                             <label for="login-email">Email</label>
-                            <input type="email" id="login-email" placeholder="votre@email.com" autocomplete="username">
+                            <input type="email" id="login-email" placeholder="votre@email.com">
                         </div>
                         <div class="auth-input-group">
                             <label for="login-password">Mot de passe</label>
-                            <input type="password" id="login-password" placeholder="Votre mot de passe" autocomplete="current-password">
+                            <input type="password" id="login-password" placeholder="Votre mot de passe">
                         </div>
                         <div class="auth-error" id="login-error"></div>
                         <button class="auth-btn" id="login-submit">Se connecter</button>
@@ -322,19 +333,15 @@
                         </div>
                         <div class="auth-input-group">
                             <label for="register-email">Email</label>
-                            <input type="email" id="register-email" placeholder="votre@email.com" autocomplete="username">
+                            <input type="email" id="register-email" placeholder="votre@email.com">
                         </div>
                         <div class="auth-input-group">
                             <label for="register-password">Mot de passe</label>
-                            <input type="password" id="register-password" placeholder="Min. 8 caractères" autocomplete="new-password">
-                            <div class="password-strength" id="password-strength">
-                                <div class="strength-bar"></div>
-                                <span class="strength-text">Force du mot de passe</span>
-                            </div>
+                            <input type="password" id="register-password" placeholder="Min. 6 caractères">
                         </div>
                         <div class="auth-input-group">
                             <label for="register-confirm">Confirmer le mot de passe</label>
-                            <input type="password" id="register-confirm" placeholder="Retapez votre mot de passe" autocomplete="new-password">
+                            <input type="password" id="register-confirm" placeholder="Retapez votre mot de passe">
                         </div>
                         <div class="auth-error" id="register-error"></div>
                         <button class="auth-btn" id="register-submit">Créer mon compte</button>
@@ -435,53 +442,18 @@
                 <div class="password-form">
                     <div class="auth-input-group">
                         <label for="current-password">Mot de passe actuel</label>
-                        <input type="password" id="current-password" placeholder="Entrez votre mot de passe actuel" autocomplete="current-password">
+                        <input type="password" id="current-password" placeholder="Entrez votre mot de passe actuel">
                     </div>
                     <div class="auth-input-group">
                         <label for="new-password">Nouveau mot de passe</label>
-                        <input type="password" id="new-password" placeholder="Min. 8 caractères" autocomplete="new-password">
+                        <input type="password" id="new-password" placeholder="Min. 6 caractères">
                     </div>
                     <div class="auth-input-group">
                         <label for="confirm-new-password">Confirmer le nouveau mot de passe</label>
-                        <input type="password" id="confirm-new-password" placeholder="Retapez le nouveau mot de passe" autocomplete="new-password">
+                        <input type="password" id="confirm-new-password" placeholder="Retapez le nouveau mot de passe">
                     </div>
                     <div class="auth-error" id="password-error"></div>
                     <button class="auth-btn" id="update-password-btn">Mettre à jour</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Security Alert Modal -->
-    <div class="modal" id="security-alert-modal">
-        <div class="modal-backdrop"></div>
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-logo">
-                    <div class="logo-image-container mini">
-                        <img src="elarakilogo.png" alt="El Araki International School" class="elaraki-logo">
-                    </div>
-                </div>
-                <h2>Alerte de Sécurité</h2>
-                <button class="modal-close" id="close-security-alert-modal">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="security-alert-content">
-                    <div class="security-icon">
-                        <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                        </svg>
-                    </div>
-                    <h3 id="security-alert-title">Activité Suspecte Détectée</h3>
-                    <p id="security-alert-message"></p>
-                    <div class="security-actions">
-                        <button class="auth-btn" id="security-alert-confirm">Compris</button>
-                    </div>
                 </div>
             </div>
         </div>
@@ -492,12 +464,15 @@
         <div class="modal-backdrop"></div>
         <div class="modal-content">
             <div class="modal-header">
+                <!-- Logo positionné à gauche -->
                 <div class="modal-logo">
                     <div class="logo-image-container mini">
                         <img src="elarakilogo.png" alt="El Araki International School" class="elaraki-logo">
                     </div>
                 </div>
+                <!-- Titre CENTRÉ -->
                 <h2>À Propos d'Elaraki GPT</h2>
+                <!-- Bouton fermer positionné à droite -->
                 <button class="modal-close" id="close-about-modal">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"/>
@@ -513,11 +488,12 @@
                     </div>
                     <div class="about-section">
                         <h3>Elaraki GPT</h3>
-                        <p>Notre assistant IA intelligent utilise les dernières technologies pour offrir un support éducatif, répondre aux questions sur notre établissement, et accompagner la communauté scolaire dans sa quête de connaissance.</p>
+                        <p>Notre assistant IA intelligent utilise les dernières technologies pour offrir un support éducative, répondre aux questions sur notre établissement, et accompagner la communauté scolaire dans sa quête de connaissance.</p>
                     </div>
                     <div class="stats-grid">
                         <div class="stat-item">
                             <div class="stat-icon">
+                                <!-- Academic SVG Icon -->
                                 <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M12 14l9-5-9-5-9 5 9 5z"/>
                                     <path d="M12 14v6l9-5M12 20l-9-5"/>
@@ -527,6 +503,7 @@
                         </div>
                         <div class="stat-item">
                             <div class="stat-icon">
+                                <!-- International SVG Icon -->
                                 <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="10"/>
                                     <line x1="2" y1="12" x2="22" y2="12"/>
@@ -537,6 +514,7 @@
                         </div>
                         <div class="stat-item">
                             <div class="stat-icon">
+                                <!-- Innovation SVG Icon -->
                                 <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polygon points="12 2 2 7 12 12 22 7 12 2"/>
                                     <polyline points="2 17 12 22 22 17"/>
@@ -556,7 +534,9 @@
         <div class="modal-backdrop"></div>
         <div class="modal-content">
             <div class="modal-header">
+                <!-- Titre CENTRÉ (sans logo à gauche pour cette modale) -->
                 <h2>Contactez-Nous</h2>
+                <!-- Bouton fermer positionné à droite -->
                 <button class="modal-close" id="close-contact-modal">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"/>
@@ -574,7 +554,7 @@
                         </div>
                         <div class="contact-details">
                             <strong>Site Web</strong>
-                            <a href="https://elaraki.ac.ma" target="_blank" rel="noopener noreferrer">elaraki.ac.ma</a>
+                            <a href="https://elaraki.ac.ma" target="_blank">elaraki.ac.ma</a>
                         </div>
                     </div>
                     <div class="contact-item">
