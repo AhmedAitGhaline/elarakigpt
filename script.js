@@ -1,13 +1,17 @@
+// ============================================================
+// ELARAKI GPT - SCRIPT COMPLET
+// Version corrigée avec sélection d'API par priorité
+// ============================================================
+
 class UserManager {
     constructor() {
         this.currentUser = null;
         this.users = new Map();
-        this.userConversations = new Map(); // userId -> conversations Map
+        this.userConversations = new Map();
         this.loadUsers();
     }
     
     loadUsers() {
-        // Charger les utilisateurs depuis localStorage
         const savedUsers = localStorage.getItem('elarakiGPTUsers');
         const savedUserConversations = localStorage.getItem('elarakiGPTUserConversations');
         
@@ -41,7 +45,6 @@ class UserManager {
             }
         }
         
-        // Vérifier si un utilisateur est déjà connecté
         const loggedInUser = localStorage.getItem('elarakiGPTLoggedInUser');
         if (loggedInUser) {
             try {
@@ -53,18 +56,15 @@ class UserManager {
     }
     
     saveUsers() {
-        // Sauvegarder les utilisateurs dans localStorage
         const usersArray = Array.from(this.users.values());
         localStorage.setItem('elarakiGPTUsers', JSON.stringify(usersArray));
         
-        // Sauvegarder les conversations par utilisateur
         const conversationsObj = {};
         this.userConversations.forEach((conversations, userId) => {
             conversationsObj[userId] = Object.fromEntries(conversations);
         });
         localStorage.setItem('elarakiGPTUserConversations', JSON.stringify(conversationsObj));
         
-        // Sauvegarder l'utilisateur connecté
         if (this.currentUser) {
             localStorage.setItem('elarakiGPTLoggedInUser', JSON.stringify(this.currentUser));
         } else {
@@ -73,20 +73,16 @@ class UserManager {
     }
     
     register(name, email, password) {
-        // Validation
         if (!name || !email || !password) {
             return { success: false, message: 'Tous les champs sont obligatoires' };
         }
-        
         if (password.length < 6) {
             return { success: false, message: 'Le mot de passe doit faire au moins 6 caractères' };
         }
-        
         if (this.users.has(email)) {
             return { success: false, message: 'Cet email est déjà utilisé' };
         }
         
-        // Créer l'utilisateur
         const userId = 'user_' + Date.now();
         const user = {
             id: userId,
@@ -106,7 +102,6 @@ class UserManager {
     }
     
     login(email, password) {
-        // Validation
         if (!email || !password) {
             return { success: false, message: 'Email et mot de passe requis' };
         }
@@ -116,12 +111,10 @@ class UserManager {
         if (!user) {
             return { success: false, message: 'Utilisateur non trouvé' };
         }
-        
         if (user.password !== this.hashPassword(password)) {
             return { success: false, message: 'Mot de passe incorrect' };
         }
         
-        // Mettre à jour la dernière connexion
         user.lastLogin = new Date().toISOString();
         this.currentUser = { ...user };
         this.saveUsers();
@@ -139,16 +132,13 @@ class UserManager {
         if (!this.currentUser) {
             return { success: false, message: 'Non connecté' };
         }
-        
         if (this.currentUser.password !== this.hashPassword(currentPassword)) {
             return { success: false, message: 'Mot de passe actuel incorrect' };
         }
-        
         if (newPassword.length < 6) {
             return { success: false, message: 'Le nouveau mot de passe doit faire au moins 6 caractères' };
         }
         
-        // Mettre à jour le mot de passe
         const user = this.users.get(this.currentUser.email);
         user.password = this.hashPassword(newPassword);
         this.currentUser.password = user.password;
@@ -170,14 +160,12 @@ class UserManager {
             userConvs = new Map();
             this.userConversations.set(this.currentUser.id, userConvs);
         }
-        
         userConvs.set(conversationId, conversationData);
         this.saveUsers();
     }
     
     deleteUserConversation(conversationId) {
         if (!this.currentUser) return;
-        
         const userConvs = this.userConversations.get(this.currentUser.id);
         if (userConvs) {
             userConvs.delete(conversationId);
@@ -187,7 +175,6 @@ class UserManager {
     
     incrementUserMessageCount() {
         if (!this.currentUser) return;
-        
         const user = this.users.get(this.currentUser.email);
         if (user) {
             user.totalMessages = (user.totalMessages || 0) + 1;
@@ -198,7 +185,6 @@ class UserManager {
     
     getUserStats() {
         if (!this.currentUser) return null;
-        
         const userConvs = this.userConversations.get(this.currentUser.id);
         const conversationCount = userConvs ? userConvs.size : 0;
         
@@ -214,7 +200,6 @@ class UserManager {
     
     exportUserData() {
         if (!this.currentUser) return null;
-        
         const userConvs = this.userConversations.get(this.currentUser.id);
         const conversations = userConvs ? Array.from(userConvs.values()) : [];
         
@@ -232,7 +217,6 @@ class UserManager {
     }
     
     hashPassword(password) {
-        // Hash simple pour démo (dans un cas réel, utiliser bcrypt ou équivalent)
         let hash = 0;
         for (let i = 0; i < password.length; i++) {
             const char = password.charCodeAt(i);
@@ -265,7 +249,6 @@ class ElarakiGPT {
         this.captchaVerified = false;
         this.captchaText = '';
         
-        // Gestionnaire d'utilisateurs
         this.userManager = new UserManager();
         
         // Éléments DOM
@@ -286,7 +269,6 @@ class ElarakiGPT {
         this.quickActions = document.getElementById('quick-actions');
         this.statusText = document.getElementById('status-text');
         
-        // Sidebar
         this.conversationsSidebar = document.getElementById('conversations-sidebar');
         this.conversationsList = document.getElementById('conversations-list');
         this.newChatBtn = document.getElementById('new-chat-btn');
@@ -294,17 +276,14 @@ class ElarakiGPT {
         this.sidebarOverlay = document.getElementById('sidebar-overlay');
         this.menuToggleBtn = document.getElementById('menu-toggle-btn');
         
-        // Mode Sombre
         this.themeToggleBtn = document.getElementById('theme-toggle-btn');
         
-        // CAPTCHA
         this.captchaTextElement = document.getElementById('captcha-text');
         this.captchaInput = document.getElementById('captcha-input');
         this.refreshCaptchaBtn = document.getElementById('refresh-captcha');
         this.submitCaptchaBtn = document.getElementById('submit-captcha');
         this.captchaError = document.getElementById('captcha-error');
         
-        // Authentification
         this.loginModal = document.getElementById('login-modal');
         this.profileModal = document.getElementById('profile-modal');
         this.changePasswordModal = document.getElementById('change-password-modal');
@@ -334,67 +313,69 @@ class ElarakiGPT {
         this.confirmNewPassword = document.getElementById('confirm-new-password');
         this.passwordError = document.getElementById('password-error');
         
-        // Header authentication elements
         this.headerControls = document.querySelector('.header-controls');
         
-        // Éléments sidebar user (nouveaux)
         this.sidebarUserSection = document.getElementById('sidebar-user-section');
         this.sidebarUserAvatar = document.getElementById('sidebar-user-avatar');
         this.sidebarUserName = document.getElementById('sidebar-user-name');
         this.welcomeUserMessage = document.getElementById('welcome-user-message');
         
-        this.createAuthButtons();
+        // ============================================================
+        // 🚀 CONFIGURATION DES APIs - CLÉS INTÉGRÉES
+        // ============================================================
+        // ⚠️ IMPORTANT : Ces clés sont visibles publiquement.
+        // Pour la production, utilisez un proxy backend.
+        // ============================================================
         
-        // 🚀 APIS QUI MARCHENT VRAIMENT
         this.apiConfigs = [
+            // 1️⃣ PRIORITÉ 1 : GROQ (quota gratuit le plus généreux)
             {
                 name: "Groq",
                 url: "https://api.groq.com/openai/v1/chat/completions",
-                key: "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",
-                models: ["llama-3.3-70b-versatile"],
+                key: "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",
+                models: ["qwen/qwen3.6-27b"],
                 priority: 10,
                 usage: 0,
-                lastUsed: 0,
                 status: 'untested'
             },
+            // 2️⃣ PRIORITÉ 2 : GEMINI (quota étendu, disponible au Maroc)
             {
-                name: "Mistral AI",
-                url: "https://api.mistral.ai/v1/chat/completions",
-                key: "L24VRJ7c2wjX50xYdqxDG8UXPSFeO1mM",
-                models: ["mistral-small-latest"],
+                name: "Google Gemini",
+                url: "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                key: "AIzaSyAcxlOoyo3EHT3rvKl1TtVHyPAAheI8CUw",
+                models: ["gemini-2.0-flash", "gemini-1.5-flash"],
                 priority: 9,
                 usage: 0,
-                lastUsed: 0,
                 status: 'untested'
             },
+            // 3️⃣ PRIORITÉ 3 : OPENROUTER (fallback multi-modèles)
             {
                 name: "OpenRouter",
                 url: "https://openrouter.ai/api/v1/chat/completions",
-                key: "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",
-                models: ["openai/gpt-3.5-turbo"],
+                key: "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",
+                models: ["meta-llama/llama-3.3-70b-instruct:free"],
                 priority: 8,
                 usage: 0,
-                lastUsed: 0,
                 status: 'untested',
                 headers: {
                     'HTTP-Referer': 'https://elaraki.ac.ma',
                     'X-Title': 'Elaraki GPT'
                 }
             },
+            // 4️⃣ PRIORITÉ 4 : MISTRAL (quotas faibles, fallback uniquement)
             {
-                name: "Google Gemini",
-                url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent",
-                key: "AIzaSyAcxlOoyo3EHT3rvKl1TtVHyPAAheI8CUw",
-                models: ["gemini-2.0-flash-exp"],
+                name: "Mistral AI",
+                url: "https://api.mistral.ai/v1/chat/completions",
+                key: "nmhzTntHFx7GCRdT4w7jsA95leaJ6sRU",
+                models: ["mistral-small-latest"],
                 priority: 7,
                 usage: 0,
-                lastUsed: 0,
                 status: 'untested'
             }
         ];
         
         this.currentApiIndex = 0;
-        this.currentConfig = this.apiConfigs[this.currentApiIndex];
+        this.currentConfig = this.apiConfigs[0];
         this.apiKey = this.currentConfig.key;
         this.apiUrl = this.currentConfig.url;
         this.model = this.currentConfig.models[0];
@@ -410,7 +391,6 @@ class ElarakiGPT {
     }
     
     createAuthButtons() {
-        // Créer le bouton de connexion/profil
         this.authButtonContainer = document.querySelector('.auth-button-container');
         this.authButtonContainer.innerHTML = '';
         
@@ -420,10 +400,7 @@ class ElarakiGPT {
             this.createLoginButton();
         }
         
-        // Mettre à jour la sidebar
         this.updateSidebarUserInfo();
-        
-        // Mettre à jour le message de bienvenue
         this.updateWelcomeMessage();
     }
     
@@ -450,21 +427,13 @@ class ElarakiGPT {
     
     updateSidebarUserInfo() {
         if (this.userManager.currentUser) {
-            // Mettre à jour l'icône avec la première lettre du prénom
             this.sidebarUserAvatar.textContent = this.userManager.getFirstLetter(this.userManager.currentUser.name);
-            
-            // Mettre à jour le nom et prénom
             this.sidebarUserName.textContent = this.userManager.currentUser.name;
-            
-            // Ajouter une classe pour conserver la couleur
             this.sidebarUserAvatar.style.background = 'var(--gradient-primary)';
             this.sidebarUserName.style.color = 'var(--text-dark)';
         } else {
-            // Réinitialiser à Elaraki GPT par défaut
             this.sidebarUserAvatar.textContent = 'E';
             this.sidebarUserName.textContent = 'Elaraki GPT';
-            
-            // Conserver la même couleur
             this.sidebarUserAvatar.style.background = 'var(--gradient-primary)';
             this.sidebarUserName.style.color = 'var(--text-dark)';
         }
@@ -473,8 +442,7 @@ class ElarakiGPT {
     showProfileModal() {
         const stats = this.userManager.getUserStats();
         if (stats) {
-            document.getElementById('profile-avatar').textContent = 
-                this.userManager.getInitials(stats.name);
+            document.getElementById('profile-avatar').textContent = this.userManager.getInitials(stats.name);
             document.getElementById('profile-name').textContent = stats.name;
             document.getElementById('profile-email').textContent = stats.email;
             document.getElementById('profile-conversations').textContent = stats.conversationCount;
@@ -486,13 +454,11 @@ class ElarakiGPT {
     }
     
     init() {
-        // Vérifier l'authentification au démarrage
         if (this.userManager.currentUser) {
             this.loadUserConversations();
             this.updateWelcomeMessage();
             this.updateSidebarUserInfo();
         } else {
-            // Afficher le modal de connexion après le CAPTCHA
             setTimeout(() => {
                 if (!this.userManager.currentUser) {
                     this.showModal(this.loginModal);
@@ -500,7 +466,6 @@ class ElarakiGPT {
             }, 1500);
         }
         
-        // Écouteurs d'événements de base
         this.sendBtn.addEventListener('click', () => this.handleSendMessage());
         this.messageInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -515,7 +480,6 @@ class ElarakiGPT {
         this.closeAboutModal.addEventListener('click', () => this.hideModal(this.aboutModal));
         this.closeContactModal.addEventListener('click', () => this.hideModal(this.contactModal));
         
-        // Fermer les modales en cliquant sur le fond (sauf CAPTCHA)
         [this.aboutModal, this.contactModal, this.loginModal, this.profileModal, this.changePasswordModal].forEach(modal => {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
@@ -524,7 +488,6 @@ class ElarakiGPT {
             });
         });
         
-        // Empêcher la fermeture du CAPTCHA par clic sur le fond
         this.captchaModal.addEventListener('click', (e) => {
             if (e.target === this.captchaModal || e.target.classList.contains('modal-backdrop')) {
                 e.preventDefault();
@@ -534,7 +497,6 @@ class ElarakiGPT {
             }
         });
         
-        // Boutons d'actions rapides
         document.querySelectorAll('.quick-action-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const prompt = e.target.getAttribute('data-prompt') || 
@@ -544,21 +506,17 @@ class ElarakiGPT {
             });
         });
         
-        // Redimensionnement automatique du textarea
         this.messageInput.addEventListener('input', () => {
             this.autoResizeTextarea();
         });
         
-        // Sidebar
         this.newChatBtn.addEventListener('click', () => this.startNewChat());
         this.toggleSidebar.addEventListener('click', () => this.toggleSidebarVisibility());
         this.sidebarOverlay.addEventListener('click', () => this.hideSidebarMobile());
         this.menuToggleBtn.addEventListener('click', () => this.toggleSidebarVisibility());
         
-        // Mode Sombre
         this.themeToggleBtn.addEventListener('click', () => this.toggleTheme());
         
-        // CAPTCHA
         this.refreshCaptchaBtn.addEventListener('click', () => this.generateCaptcha());
         this.submitCaptchaBtn.addEventListener('click', () => this.verifyCaptcha());
         this.captchaInput.addEventListener('keydown', (e) => {
@@ -568,12 +526,10 @@ class ElarakiGPT {
             }
         });
         
-        // Authentification
         this.closeLoginModal.addEventListener('click', () => this.hideModal(this.loginModal));
         this.closeProfileModal.addEventListener('click', () => this.hideModal(this.profileModal));
         this.closeChangePasswordModal.addEventListener('click', () => this.hideModal(this.changePasswordModal));
         
-        // Login/Register forms
         this.switchToRegister.addEventListener('click', (e) => {
             e.preventDefault();
             this.loginForm.classList.remove('active');
@@ -589,7 +545,6 @@ class ElarakiGPT {
         this.loginSubmit.addEventListener('click', () => this.handleLogin());
         this.registerSubmit.addEventListener('click', () => this.handleRegister());
         
-        // Profile actions
         this.changePasswordBtn.addEventListener('click', () => {
             this.hideModal(this.profileModal);
             this.showModal(this.changePasswordModal);
@@ -599,30 +554,24 @@ class ElarakiGPT {
         this.logoutBtn.addEventListener('click', () => this.handleLogout());
         this.updatePasswordBtn.addEventListener('click', () => this.handleChangePassword());
         
-        // Charger l'état initial
         this.loadThemePreference();
         this.generateCaptcha();
-        
-        // Vérifier CAPTCHA au démarrage (obligatoire)
         this.checkCaptchaOnStart();
-        
-        // Créer une nouvelle conversation
         this.startNewChat();
         
-        // Gestion du redimensionnement
         window.addEventListener('resize', () => this.handleResize());
         this.handleResize();
         
-        // Tester les APIs
+        // Tester les APIs après le chargement
         setTimeout(() => this.testAPIsSequentially(), 1500);
         
-        // Animation des actions rapides
         setTimeout(() => {
             this.quickActions.classList.add('show');
         }, 1000);
+        
+        this.createAuthButtons();
     }
     
-    // 🔐 GESTION CAPTCHA OBLIGATOIRE
     checkCaptchaOnStart() {
         const captchaVerified = sessionStorage.getItem('captchaVerified');
         
@@ -657,10 +606,8 @@ class ElarakiGPT {
             sessionStorage.setItem('captchaVerified', 'true');
             this.hideModal(this.captchaModal);
             this.updateStatus("CAPTCHA vérifié - Prêt à discuter");
-            
             this.enableChatInterface();
             
-            // Si non connecté, montrer la modale de connexion
             if (!this.userManager.currentUser) {
                 setTimeout(() => {
                     this.showModal(this.loginModal);
@@ -680,7 +627,6 @@ class ElarakiGPT {
         this.updateStatus("Elaraki GPT est prêt");
     }
     
-    // 👤 GESTION AUTHENTIFICATION
     handleLogin() {
         const email = this.loginEmail.value.trim();
         const password = this.loginPassword.value.trim();
@@ -714,17 +660,14 @@ class ElarakiGPT {
         
         this.registerError.textContent = '';
         
-        // Validation
         if (!name || !email || !password || !confirm) {
             this.registerError.textContent = 'Tous les champs sont obligatoires';
             return;
         }
-        
         if (password.length < 6) {
             this.registerError.textContent = 'Le mot de passe doit faire au moins 6 caractères';
             return;
         }
-        
         if (password !== confirm) {
             this.registerError.textContent = 'Les mots de passe ne correspondent pas';
             return;
@@ -733,7 +676,6 @@ class ElarakiGPT {
         const result = this.userManager.register(name, email, password);
         
         if (result.success) {
-            // Se connecter automatiquement après inscription
             this.userManager.currentUser = result.user;
             this.userManager.saveUsers();
             
@@ -744,7 +686,6 @@ class ElarakiGPT {
             this.updateSidebarUserInfo();
             this.showNotification(`Compte créé avec succès ! Bienvenue ${result.user.name}`);
             
-            // Réinitialiser le formulaire
             this.registerForm.classList.remove('active');
             this.loginForm.classList.add('active');
             this.registerName.value = '';
@@ -786,12 +727,10 @@ class ElarakiGPT {
             this.passwordError.textContent = 'Tous les champs sont obligatoires';
             return;
         }
-        
         if (newPass.length < 6) {
             this.passwordError.textContent = 'Le nouveau mot de passe doit faire au moins 6 caractères';
             return;
         }
-        
         if (newPass !== confirm) {
             this.passwordError.textContent = 'Les nouveaux mots de passe ne correspondent pas';
             return;
@@ -802,8 +741,6 @@ class ElarakiGPT {
         if (result.success) {
             this.hideModal(this.changePasswordModal);
             this.showNotification('Mot de passe mis à jour avec succès');
-            
-            // Réinitialiser les champs
             this.currentPassword.value = '';
             this.newPassword.value = '';
             this.confirmNewPassword.value = '';
@@ -825,7 +762,6 @@ class ElarakiGPT {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            
             this.showNotification('Données exportées avec succès');
         }
     }
@@ -833,13 +769,10 @@ class ElarakiGPT {
     loadUserConversations() {
         if (this.userManager.currentUser) {
             this.conversations = this.userManager.getUserConversations();
-            
-            // Extraire les titres
             this.conversationTitles = new Map();
             this.conversations.forEach((data, id) => {
                 this.conversationTitles.set(id, data.title);
             });
-            
             this.updateConversationsList();
         }
     }
@@ -860,7 +793,6 @@ class ElarakiGPT {
     }
     
     showNotification(message, type = 'success') {
-        // Créer une notification temporaire
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
         notification.textContent = message;
@@ -884,7 +816,6 @@ class ElarakiGPT {
             setTimeout(() => notification.remove(), 300);
         }, 3000);
         
-        // Ajouter les animations CSS
         if (!document.querySelector('#notification-styles')) {
             const style = document.createElement('style');
             style.id = 'notification-styles';
@@ -918,14 +849,11 @@ class ElarakiGPT {
         this.sendMessage();
     }
     
-    // 🌙 MODE SOMBRE
     toggleTheme() {
         const currentTheme = document.documentElement.getAttribute('data-theme');
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', newTheme);
         localStorage.setItem('theme', newTheme);
-        
-        // Mettre à jour la couleur de l'avatar après changement de thème
         this.updateSidebarUserInfo();
     }
     
@@ -934,7 +862,34 @@ class ElarakiGPT {
         document.documentElement.setAttribute('data-theme', savedTheme);
     }
     
-    // 🚀 ENVOYER MESSAGE
+    // ============================================================
+    // 🚀 SÉLECTION DE L'API PAR PRIORITÉ (CORRIGÉE)
+    // ============================================================
+    getBestAPI() {
+        // Priorité 1 : Groq (index 0) si disponible
+        if (this.workingAPIs.has(0)) {
+            return 0;
+        }
+        
+        // Priorité 2 : Gemini (index 1) si disponible
+        if (this.workingAPIs.has(1)) {
+            return 1;
+        }
+        
+        // Priorité 3 : OpenRouter (index 2)
+        if (this.workingAPIs.has(2)) {
+            return 2;
+        }
+        
+        // Priorité 4 : Mistral (index 3)
+        if (this.workingAPIs.has(3)) {
+            return 3;
+        }
+        
+        // Aucune API testée → utiliser Groq par défaut
+        return 0;
+    }
+    
     async sendMessage() {
         const message = this.messageInput.value.trim();
         
@@ -953,49 +908,53 @@ class ElarakiGPT {
         this.setLoading(true);
         
         try {
-            const apiIndex = this.getBestAPI();
-            this.currentApiIndex = apiIndex;
-            this.currentConfig = this.apiConfigs[apiIndex];
-            this.apiKey = this.currentConfig.key;
-            this.apiUrl = this.currentConfig.url;
-            this.model = this.currentConfig.models[0];
-            
-            console.log(`🎯 Utilisation: ${this.currentConfig.name} - ${this.model}`);
-            
-            let response;
+            let response = null;
             let attempts = 0;
-            const maxAttempts = 2;
+            const maxAttempts = 3;
+            const triedAPIs = new Set();
             
-            while (attempts < maxAttempts) {
+            // Essayer jusqu'à 3 APIs différentes
+            while (attempts < maxAttempts && !response) {
+                const apiIndex = this.getBestAPIFromUntried(triedAPIs);
+                
+                if (apiIndex === -1) {
+                    console.log("⚠️ Toutes les APIs ont été essayées");
+                    break;
+                }
+                
+                triedAPIs.add(apiIndex);
+                this.currentApiIndex = apiIndex;
+                this.currentConfig = this.apiConfigs[apiIndex];
+                this.apiKey = this.currentConfig.key;
+                this.apiUrl = this.currentConfig.url;
+                this.model = this.currentConfig.models[0];
+                
+                console.log(`🎯 Tentative ${attempts + 1}/${maxAttempts}: ${this.currentConfig.name}`);
+                
                 try {
                     const startTime = Date.now();
                     response = await this.getAIResponseAPI(message);
                     const responseTime = Date.now() - startTime;
                     
-                    console.log(`✅ Succès en ${responseTime}ms`);
+                    console.log(`✅ Succès via ${this.currentConfig.name} en ${responseTime}ms`);
+                    this.workingAPIs.add(apiIndex);
+                    this.failedAPIs.delete(apiIndex);
                     break;
                     
                 } catch (apiError) {
                     attempts++;
-                    console.log(`❌ Tentative ${attempts} échouée: ${apiError.message}`);
+                    console.log(`❌ Échec ${this.currentConfig.name}: ${apiError.message}`);
+                    this.failedAPIs.add(apiIndex);
+                    this.workingAPIs.delete(apiIndex);
                     
                     if (attempts < maxAttempts) {
-                        await new Promise(resolve => setTimeout(resolve, 1500));
-                        const newApiIndex = this.getBestAPI();
-                        if (newApiIndex !== apiIndex) {
-                            this.currentApiIndex = newApiIndex;
-                            this.currentConfig = this.apiConfigs[newApiIndex];
-                            this.apiKey = this.currentConfig.key;
-                            this.apiUrl = this.currentConfig.url;
-                            this.model = this.currentConfig.models[0];
-                            console.log(`🔄 Changement vers: ${this.currentConfig.name}`);
-                        }
+                        await new Promise(resolve => setTimeout(resolve, 1000));
                     }
                 }
             }
             
             if (!response) {
-                console.log("⚠️ Toutes les APIs échouées, mode local");
+                console.log("⚠️ Toutes les APIs ont échoué, mode local activé");
                 response = await this.getLocalResponse(message);
             }
             
@@ -1003,9 +962,7 @@ class ElarakiGPT {
             this.conversation.push({ role: "user", content: message });
             this.conversation.push({ role: "assistant", content: response });
             
-            // Incrémenter le compteur de messages
             this.userManager.incrementUserMessageCount();
-            
             this.saveCurrentConversation();
             
         } catch (error) {
@@ -1018,6 +975,20 @@ class ElarakiGPT {
         }
     }
     
+    // Sélectionne la meilleure API non encore essayée
+    getBestAPIFromUntried(triedAPIs) {
+        // Ordre de préférence : Groq → Gemini → OpenRouter → Mistral
+        const preferredOrder = [0, 1, 2, 3];
+        
+        for (const index of preferredOrder) {
+            if (!triedAPIs.has(index)) {
+                return index;
+            }
+        }
+        
+        return -1;
+    }
+    
     async getAIResponseAPI(userMessage) {
         const config = this.currentConfig;
         
@@ -1028,6 +999,7 @@ class ElarakiGPT {
         
         this.conversation.push({ role: "user", content: userMessage });
         
+        // === GEMINI ===
         if (config.name === "Google Gemini") {
             const url = `${config.url}?key=${config.key}`;
             
@@ -1042,14 +1014,18 @@ class ElarakiGPT {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify(requestBody),
-                signal: AbortSignal.timeout(15000)
+                signal: AbortSignal.timeout(20000)
             });
             
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(`HTTP ${response.status}: ${errData.error?.message || 'Erreur'}`);
+            }
+            
             const data = await response.json();
             
             if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
-                throw new Error('Réponse invalide');
+                throw new Error('Réponse Gemini invalide');
             }
             
             const assistantMessage = data.candidates[0].content.parts[0].text;
@@ -1057,6 +1033,7 @@ class ElarakiGPT {
             return assistantMessage;
             
         } else {
+            // === GROQ / OPENROUTER / MISTRAL (format OpenAI) ===
             if (config.key) {
                 headers['Authorization'] = `Bearer ${config.key}`;
             }
@@ -1076,10 +1053,14 @@ class ElarakiGPT {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify(requestBody),
-                signal: AbortSignal.timeout(15000)
+                signal: AbortSignal.timeout(20000)
             });
             
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(`HTTP ${response.status}: ${errData.error?.message || 'Erreur'}`);
+            }
+            
             const data = await response.json();
             
             let assistantMessage;
@@ -1121,21 +1102,23 @@ class ElarakiGPT {
         return "Je suis l'assistant Elaraki GPT spécialisé sur notre école. Pour des informations précises :\n\n📞 **Téléphone:** +212 543-05544\n📧 **Email:** info@elaraki.ac.ma\n🌐 **Site:** elaraki.ac.ma\n\nPosez-moi une question spécifique sur notre établissement !";
     }
     
-    // 🧪 TESTER LES APIS
     async testAPIsSequentially() {
-        console.log('🔍 Test des APIs...');
-        this.updateStatus("Initialisation...");
+        console.log('🔍 Test séquentiel des APIs...');
+        this.updateStatus("Test des connexions...");
         
         for (let i = 0; i < this.apiConfigs.length; i++) {
             await this.testAPI(i);
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 800));
         }
         
         const workingCount = this.workingAPIs.size;
         console.log(`✅ ${workingCount}/${this.apiConfigs.length} APIs fonctionnent`);
         
         if (workingCount > 0) {
-            this.updateStatus(`${workingCount} APIs actives`);
+            const firstWorking = this.getBestAPI();
+            this.currentApiIndex = firstWorking;
+            this.currentConfig = this.apiConfigs[firstWorking];
+            this.updateStatus(`${workingCount} APIs actives - ${this.currentConfig.name} en priorité`);
         } else {
             this.updateStatus("Mode local activé");
         }
@@ -1148,25 +1131,14 @@ class ElarakiGPT {
         try {
             console.log(`🧪 Test ${config.name}...`);
             
-            if (config.name === "Free GPT") {
-                this.workingAPIs.add(apiIndex);
-                config.status = 'working';
-                console.log(`✅ ${config.name} (proxy présumé fonctionnel)`);
-                return;
-            }
-            
             let testUrl = config.url;
             let testBody = {};
-            let headers = {
-                'Content-Type': 'application/json'
-            };
+            let headers = { 'Content-Type': 'application/json' };
             
             if (config.name === "Google Gemini") {
                 testUrl = `${config.url}?key=${config.key}`;
                 testBody = {
-                    contents: [{
-                        parts: [{ text: "test" }]
-                    }]
+                    contents: [{ parts: [{ text: "test" }] }]
                 };
             } else {
                 headers['Authorization'] = `Bearer ${config.key}`;
@@ -1176,7 +1148,7 @@ class ElarakiGPT {
                 testBody = {
                     model: config.models[0],
                     messages: [{ role: "user", content: "test" }],
-                    max_tokens: 1
+                    max_tokens: 5
                 };
             }
             
@@ -1189,45 +1161,29 @@ class ElarakiGPT {
             
             const responseTime = Date.now() - startTime;
             
-            if (response.ok || response.status === 400 || response.status === 422 || response.status === 429) {
+            if (response.ok) {
                 this.workingAPIs.add(apiIndex);
                 config.status = 'working';
-                console.log(`✅ ${config.name} fonctionne (${responseTime}ms)`);
+                console.log(`✅ ${config.name} OK (${responseTime}ms)`);
+            } else if (response.status === 429) {
+                config.status = 'rate-limited';
+                console.log(`⏱️ ${config.name} rate-limited (429)`);
+            } else if (response.status === 401 || response.status === 403) {
+                this.failedAPIs.add(apiIndex);
+                config.status = 'auth-failed';
+                console.log(`🔑 ${config.name} clé invalide (${response.status})`);
             } else {
                 this.failedAPIs.add(apiIndex);
                 config.status = 'failed';
-                console.log(`❌ ${config.name} échoué: HTTP ${response.status}`);
+                console.log(`❌ ${config.name} HTTP ${response.status}`);
             }
         } catch (error) {
-            const responseTime = Date.now() - startTime;
             this.failedAPIs.add(apiIndex);
             config.status = 'failed';
-            console.log(`⚠️ ${config.name} erreur: ${error.message} (${responseTime}ms)`);
+            console.log(`⚠️ ${config.name} erreur: ${error.message}`);
         }
     }
     
-    getBestAPI() {
-        const availableAPIs = Array.from(this.workingAPIs);
-        
-        if (availableAPIs.length === 0) {
-            return 0;
-        }
-        
-        let bestApiIndex = availableAPIs[0];
-        let minUsage = this.apiConfigs[bestApiIndex].usage;
-        
-        for (const apiIndex of availableAPIs) {
-            const config = this.apiConfigs[apiIndex];
-            if (config.usage < minUsage) {
-                minUsage = config.usage;
-                bestApiIndex = apiIndex;
-            }
-        }
-        
-        return bestApiIndex;
-    }
-    
-    // 💾 GESTION CONVERSATIONS
     startNewChat() {
         this.currentConversationId = 'chat_' + Date.now();
         this.conversation = [];
@@ -1258,11 +1214,9 @@ class ElarakiGPT {
             
             this.conversations.set(this.currentConversationId, conversationData);
             
-            // Sauvegarder dans le compte utilisateur si connecté
             if (this.userManager.currentUser) {
                 this.userManager.saveUserConversation(this.currentConversationId, conversationData);
             } else {
-                // Sauvegarde locale temporaire (sera perdue à la déconnexion)
                 this.saveToLocalStorage();
             }
         }
@@ -1292,17 +1246,13 @@ class ElarakiGPT {
     }
     
     loadSavedConversations() {
-        // Charger depuis le compte utilisateur
         if (this.userManager.currentUser) {
             this.conversations = this.userManager.getUserConversations();
-            
-            // Extraire les titres
             this.conversationTitles = new Map();
             this.conversations.forEach((data, id) => {
                 this.conversationTitles.set(id, data.title);
             });
         } else {
-            // Charger depuis localStorage (temporaire)
             const saved = localStorage.getItem('elarakiGPTConversations');
             const savedTitles = localStorage.getItem('elarakiGPTConversationTitles');
             
@@ -1313,7 +1263,6 @@ class ElarakiGPT {
                     this.conversations = new Map();
                 }
             }
-            
             if (savedTitles) {
                 try {
                     this.conversationTitles = new Map(Object.entries(JSON.parse(savedTitles)));
@@ -1322,12 +1271,10 @@ class ElarakiGPT {
                 }
             }
         }
-        
         this.updateConversationsList();
     }
     
     saveToLocalStorage() {
-        // Sauvegarde locale temporaire (seulement si non connecté)
         if (!this.userManager.currentUser) {
             const conversationsObj = Object.fromEntries(this.conversations);
             localStorage.setItem('elarakiGPTConversations', JSON.stringify(conversationsObj));
@@ -1340,7 +1287,6 @@ class ElarakiGPT {
         if (!this.conversationsList) return;
         this.conversationsList.innerHTML = '';
         
-        // Ajouter un indicateur si connecté
         if (this.userManager.currentUser) {
             const userInfo = document.createElement('div');
             userInfo.className = 'conversation-group-title';
@@ -1431,7 +1377,6 @@ class ElarakiGPT {
         }
     }
     
-    // 📱 SIDEBAR
     toggleSidebarVisibility() {
         if (window.innerWidth <= 768) {
             this.conversationsSidebar.classList.toggle('mobile-open');
@@ -1467,7 +1412,6 @@ class ElarakiGPT {
         }
     }
     
-    // 🎯 MÉTHODES UTILITAIRES
     updateStatus(status) {
         if (this.statusText) {
             this.statusText.textContent = status;
@@ -1545,7 +1489,6 @@ class ElarakiGPT {
     }
 }
 
-// Initialiser
 document.addEventListener('DOMContentLoaded', () => {
     window.elarakiGPT = new ElarakiGPT();
 });
